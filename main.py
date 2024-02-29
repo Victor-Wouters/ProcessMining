@@ -4,6 +4,7 @@ import ImportData
 import ActivitiesStats
 import BPMN
 import Visuals
+import EventlogDescription
 
 if __name__ == "__main__":
     event_log = ImportData.read_in_data('data\eventlogtest.csv')
@@ -14,5 +15,6 @@ if __name__ == "__main__":
     Visuals.process_tree(event_log)
     Visuals.process_map_DFG_algorithm(event_log)
     Visuals.process_map_Heuristics_Miner(event_log)
+    EventlogDescription.log_statistics(event_log)
 
 
