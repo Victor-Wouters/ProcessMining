@@ -18,3 +18,19 @@ def log_statistics(event_log):
     }
 
     print(data)
+    
+    max_length_trace = [variant for variant in variants.keys() if len(variant) == max_length]
+    
+    if max_length_trace:
+        print("\nTrace(s) with the maximum length:")
+        for trace in max_length_trace:
+            print(trace)
+    
+    min_length_trace = [variant for variant in variants.keys() if len(variant) == min_length]
+    
+    if min_length_trace:
+        print("\nTrace(s) with the maximum length:")
+        for trace in min_length_trace:
+            print(trace)
+
+    return
