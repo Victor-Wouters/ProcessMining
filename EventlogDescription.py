@@ -15,6 +15,13 @@ def log_statistics(event_log):
     max_length = max(len(key) for key in variants.keys())
     min_length=min(len(key) for key in variants.keys())
     avg_length = round(np.mean([len(key) for key in variants.keys()]))
+    std_length=np.std(np.array([len(key) for key in variants.keys()])) 
+    case_durations=pm4py.get_all_case_durations(event_log)
+    max_duration=max(case_durations)/3600
+    min_duration=min(case_durations)
+    avg_duration=np.mean(case_durations)/3600
+    std_duration = np.sqrt(np.var(case_durations)) / 3600
+
    
    
     
@@ -26,15 +33,20 @@ def log_statistics(event_log):
         'Max Length': [max_length],
         'Min Length': [min_length],
         'Avg Length': [avg_length],
+        'Std Length': [std_length],
         'Number of distinct traces': [dist_traces],
         'Number of events': [num_events],
         'Number of distinct events': [dist_events],
-        'Number of cases': [num_cases]
-        #'max_duration':[max_duration]
+        'Number of cases': [num_cases],
+        'Max_duration (in hours)':[max_duration],
+        'Min_duration (in seconds)':[min_duration],
+        'Avg_duration (in hours)':[avg_duration],
+        'Std_duration (in hours)':[std_duration]
+
     }
 
     print(data)
-    print(sum(variants.values()))
+
     
     max_length_trace = [variant for variant in variants.keys() if len(variant) == max_length]
     
