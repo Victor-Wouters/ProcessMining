@@ -5,13 +5,19 @@ import numpy as np
 # Discover traces in the event log
 def log_statistics(event_log):
     variants = pm4py.get_variants(event_log)
+    dsit_traces=len(variants.keys())
+    num_events=len(event_log)
+    dist_events=len(set(event_log['Activity']))
+    dist_traces=len(set(variants.keys()))
+    num_cases = len(event_log.case_id.unique())
     start=pm4py.get_start_activities(event_log)
     end=pm4py.get_end_activities(event_log)
     max_length = max(len(key) for key in variants.keys())
     min_length=min(len(key) for key in variants.keys())
     avg_length = round(np.mean([len(key) for key in variants.keys()]))
-    max_duration= max(pm4py.stats.get_case_duration(str(case)) for case in range(0, len(event_log)))
-
+   
+   
+    
 
     
     data = {
@@ -20,10 +26,15 @@ def log_statistics(event_log):
         'Max Length': [max_length],
         'Min Length': [min_length],
         'Avg Length': [avg_length],
-        'max_duration':[max_duration]
+        'Number of distinct traces': [dist_traces],
+        'Number of events': [num_events],
+        'Number of distinct events': [dist_events],
+        'Number of cases': [num_cases]
+        #'max_duration':[max_duration]
     }
 
     print(data)
+    print(sum(variants.values()))
     
     max_length_trace = [variant for variant in variants.keys() if len(variant) == max_length]
     
