@@ -9,6 +9,7 @@ import EventSequences
 import KPIVisuals
 
 if __name__ == "__main__":
+    event_log_df= pd.read_csv('data\eventlog0.csv', sep=';')
     event_log = ImportData.read_in_data('data\eventlog0.csv')
     transactions = pd.read_csv('data\TRANSACTION1.csv', sep=';')
     #print(event_log)
@@ -21,8 +22,9 @@ if __name__ == "__main__":
     #EventlogDescription.log_statistics(event_log)
     #event_log1 = ImportData.read_in_data('data\eventlogtest3.csv')
     #EventSequences.filter_activity(event_log, transactions)
-    KPIVisuals.transactions_over_time(event_log)
-    KPIVisuals.histogram()
+    KPIVisuals.settlements_graph(event_log_df)
+    KPIVisuals.histogram_val_match_sett(event_log_df)
+    KPIVisuals.histogram_unsettled(event_log, event_log_df)
 
 
 
