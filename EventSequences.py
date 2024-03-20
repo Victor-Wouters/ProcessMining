@@ -26,13 +26,6 @@ def filter_activity(event_log, transactions):
     print("mean value of all the transactions that settle after being unsettled:" ,mean_value)
     total_value = transactions['Value'].sum()
     print("value ratio:", filtered_transactions['Value'].sum()/total_value)
-
-
-
-
-    #print(settle_after_unsettled.case_id.unique())
-
-
     return 
 
 
