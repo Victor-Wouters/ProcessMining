@@ -22,9 +22,10 @@ if __name__ == "__main__":
     #EventlogDescription.log_statistics(event_log)
     #event_log1 = ImportData.read_in_data('data\eventlogtest3.csv')
     #EventSequences.filter_activity(event_log, transactions)
-    KPIVisuals.settlements_graph(event_log_df)
-    KPIVisuals.histogram_val_match_sett(event_log_df)
-    KPIVisuals.histogram_unsettled(event_log, event_log_df)
+    #KPIVisuals.settlements_graph(event_log_df)
+    #KPIVisuals.histogram_val_match_sett(event_log_df)
+    #KPIVisuals.histogram_unsettled(event_log, event_log_df)
+    KPIVisuals.settlement_efficiency_participant(event_log,transactions)
 
 
 
