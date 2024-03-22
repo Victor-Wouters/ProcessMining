@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.ticker as mticker
 import locale
+import datetime
+import time
 
 
 
@@ -65,7 +67,7 @@ def histogram_val_match_sett(event_log_df):
     return
 
 def histogram_unsettled(event_log, event_log_df):
-      # Filter traces where the pattern: "... -> Waiting in queue unsettled -> ... -> Settling" occurs
+    # Filter traces where the pattern: "... -> Waiting in queue unsettled -> ... -> Settling" occurs
     settle_after_unsettled = pm4py.filter_trace_segments(event_log, [["...", "Waiting in queue unsettled", "...", "Settling"]], positive=True)
     unsettled_no_credit=pm4py.filter_trace_segments(event_log, [["...", "Waiting in queue unsettled"]], positive=True)
     
@@ -119,20 +121,25 @@ def histogram_unsettled(event_log, event_log_df):
     plt.show()
     return
 
+
 def settlement_efficiency_participant(event_log,transactions):
     settled_transactions = pm4py.filter_trace_segments(event_log, [["...", "Settling"]], positive=True)
     settled_transactions_id=settled_transactions.case_id.unique()
     settled_transactions_id=[int(tid) for tid in settled_transactions_id]
-    print(settled_transactions_id)
+    #print(settled_transactions_id)
     print("number of transactions settled:", len(settled_transactions_id))
     settlement_participant=dict()
+    processed_transactions=pm4py.filter_trace_segments(event_log, [["...","Validating","..."]], positive=True)
+    #print(processed_transactions)
+    processed_transactions_id=processed_transactions.case_id.unique()
+    processed_transactions_id=[int(tid) for tid in processed_transactions_id]
 
     number_participants=max(transactions["FromParticipantId"])
     participant_efficiency=dict()
     for participant in range(1,number_participants+1):
         #print("participant:", participant)
-        sending_transactions_of_participant=transactions["Value"][(transactions['FromParticipantId'] == participant) & (transactions['FromAccountId'] != 0)]
-        #print("sending transactions of participant", participant,":", sending_transactions_of_participant, len(sending_transactions_of_participant))
+        sending_transactions_of_participant=transactions["Value"][(transactions['FromParticipantId'] == participant) & (transactions['FromAccountId'] != 0) & (transactions['TID'].isin(processed_transactions_id))]
+        print("sending transactions of participant", participant,":", sending_transactions_of_participant, len(sending_transactions_of_participant))
 
         #print("sending transactions of participant:",sending_transactions_of_participant)
         total_sending = sum(sending_transactions_of_participant)
@@ -156,6 +163,7 @@ def settlement_efficiency_participant(event_log,transactions):
     
     keys = list(participant_efficiency.keys())
     values = list(participant_efficiency.values())
+    print(participant_efficiency)
 
     bar=plt.bar(keys, values)
     plt.xlabel('Keys')
@@ -164,10 +172,10 @@ def settlement_efficiency_participant(event_log,transactions):
     for bar, value in zip(bar, values):
         plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), round(value,2), ha='center', va='bottom')
     mean_value = np.mean(values)
-    print("mean settlement efficiency", mean_value)
+   # print("mean settlement efficiency", mean_value)
 
     # Add a horizontal line for the mean value
-    plt.axhline(y=mean_value, color='r', linestyle='-', label=f'Average Settlement efficiency: {mean_value:.2f}')
+   # plt.axhline(y=mean_value, color='r', linestyle='-', label=f'Average Settlement efficiency: {mean_value:.2f}')
     plt.legend()
     plt.xticks(keys)
     plt.xlabel('Participant')
@@ -223,9 +231,6 @@ def value_transactions_settled_unsettled(event_log, transactions):
     settled_transaction_value=sum(transactions["Value"][transactions['TID'].isin(settled_transactions_id)])
     histogram_dict["Settled value"]=settled_transaction_value
 
-
-    
-
     unsettled_transactions = pm4py.filter_trace_segments(event_log, [["...", "Settling"]], positive=False)
     unsettled_transactions_id=unsettled_transactions.case_id.unique()
     unsettled_transactions_id=[int(tid) for tid in unsettled_transactions_id]
@@ -260,6 +265,15 @@ def value_transactions_settled_unsettled(event_log, transactions):
     plt.show()
 
     return
+
+def settlement_efficiency_over_time(event_log, transactions):
+    for i in range(0, 86400, 900):  
+        time_hour = time.gmtime(i) 
+        time_hour_str = time.strftime('%H:%M:%S', time_hour) 
+        
+        filtered_event_log = event_log[event_log["Starttime"].hour < time_hour_str]
+       
+    return  
 
 
 
