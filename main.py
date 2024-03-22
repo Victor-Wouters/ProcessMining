@@ -9,9 +9,9 @@ import EventSequences
 import KPIVisuals
 
 if __name__ == "__main__":
-    event_log_df= pd.read_csv('data\eventlog0.csv', sep=';')
-    event_log = ImportData.read_in_data('data\eventlog0.csv')
-    transactions = pd.read_csv('data\TRANSACTION1.csv', sep=';')
+    event_log_df= pd.read_csv('data\eventlog22_3.csv', sep=';')
+    event_log = ImportData.read_in_data('data\eventlog22_3.csv')
+    transactions = pd.read_csv('data\TRANSACTION22_3.csv', sep=';')
     #print(event_log)
     #ActivitiesStats.activities(event_log)
     #BPMN.process_tree_to_BPMN(event_log)
@@ -25,7 +25,9 @@ if __name__ == "__main__":
     #KPIVisuals.settlements_graph(event_log_df)
     #KPIVisuals.histogram_val_match_sett(event_log_df)
     #KPIVisuals.histogram_unsettled(event_log, event_log_df)
-    KPIVisuals.settlement_efficiency_participant(event_log,transactions)
+    #KPIVisuals.settlement_efficiency_participant(event_log,transactions)
+    KPIVisuals.number_transactions_settled_unsettled(event_log)
+    KPIVisuals.value_transactions_settled_unsettled(event_log, transactions)
 
 
 

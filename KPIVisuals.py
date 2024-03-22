@@ -2,6 +2,10 @@ import pm4py
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import matplotlib.ticker as mticker
+import locale
+
 
 
 def settlements_graph(event_log_df):
@@ -55,7 +59,7 @@ def histogram_val_match_sett(event_log_df):
     for p in ax.patches:
         if p.get_height()!=0:
             ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width() / 2., p.get_height()), 
-                        ha='center', va='center', fontsize=4, color='black', xytext=(0, 5), 
+                        ha='center', va='center', fontsize=6, color='black', xytext=(0, 5), 
                         textcoords='offset points')
     plt.show()
     return
@@ -120,22 +124,33 @@ def settlement_efficiency_participant(event_log,transactions):
     settled_transactions_id=settled_transactions.case_id.unique()
     settled_transactions_id=[int(tid) for tid in settled_transactions_id]
     print(settled_transactions_id)
+    print("number of transactions settled:", len(settled_transactions_id))
+    settlement_participant=dict()
 
     number_participants=max(transactions["FromParticipantId"])
     participant_efficiency=dict()
     for participant in range(1,number_participants+1):
         #print("participant:", participant)
         sending_transactions_of_participant=transactions["Value"][(transactions['FromParticipantId'] == participant) & (transactions['FromAccountId'] != 0)]
+        #print("sending transactions of participant", participant,":", sending_transactions_of_participant, len(sending_transactions_of_participant))
 
         #print("sending transactions of participant:",sending_transactions_of_participant)
         total_sending = sum(sending_transactions_of_participant)
+        #print("sending value of participant", participant,":", total_sending)
+
 
         #print("value of settling transactions:",transactions["Value"][(transactions['FromParticipantId'] == participant) & (transactions['TID'].isin(settled_transactions_id))])
-        total_sending_settled=sum(transactions["Value"][(transactions['FromParticipantId'] == participant) & (transactions['FromAccountId'] != 0) & (transactions['TID'].isin(settled_transactions_id))])
+        sending_settled=transactions["Value"][(transactions['FromParticipantId'] == participant) & (transactions['FromAccountId'] != 0) & (transactions['TID'].isin(settled_transactions_id))]
+        print("settled transactions of participant", participant, ":", sending_settled, len(sending_settled))
+        total_sending_settled=sum(sending_settled)
+        print("participant total settled value", total_sending_settled)
+        settlement_participant[participant]=total_sending_settled
+        
         
         settlement_efficiency=total_sending_settled/total_sending
         #print("settlement efficiencey:",participant,":", settlement_efficiency)
         participant_efficiency[participant]=settlement_efficiency
+        print(settlement_participant)
 
     
     
@@ -149,15 +164,100 @@ def settlement_efficiency_participant(event_log,transactions):
     for bar, value in zip(bar, values):
         plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), round(value,2), ha='center', va='bottom')
     mean_value = np.mean(values)
+    print("mean settlement efficiency", mean_value)
 
     # Add a horizontal line for the mean value
-    plt.axhline(y=mean_value, color='r', linestyle='-', label=f'Mean: {mean_value:.2f}')
+    plt.axhline(y=mean_value, color='r', linestyle='-', label=f'Average Settlement efficiency: {mean_value:.2f}')
     plt.legend()
     plt.xticks(keys)
+    plt.xlabel('Participant')
+    plt.ylabel('Settlement efficiency')
+    plt.show()
+    return
+
+def number_transactions_settled_unsettled(event_log):
+    histogram_dict=dict()
+    settled_transactions = pm4py.filter_trace_segments(event_log, [["...", "Settling"]], positive=True)
+    settled_transactions_id=settled_transactions.case_id.unique()
+    settled_transactions_id=[int(tid) for tid in settled_transactions_id]
+    number_settled=len(settled_transactions_id)
+    histogram_dict["settled"]=number_settled
+
+    unsettled_transactions = pm4py.filter_trace_segments(event_log, [["...", "Settling"]], positive=False)
+    unsettled_transactions_id=unsettled_transactions.case_id.unique()
+    unsettled_transactions_id=[int(tid) for tid in unsettled_transactions_id]
+    number_unsettled=len(unsettled_transactions_id)
+    histogram_dict["unsettled"]=number_unsettled
+
+    keys = list(histogram_dict.keys())
+    values = list(histogram_dict.values())
+
+    bar=plt.bar(keys, values)
+    plt.xlabel('Keys')
+    plt.ylabel('Values')
+    plt.title('Number of transactions settled and unsettled')
+    bar=plt.bar(keys, values, color=['green', 'red'])  # Green for settled, red for unsettled
+    for bar, value in zip(bar, values):
+        plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), round(value,2), ha='center', va='bottom')
+    
+    # Add a horizontal line for the mean value
+    plt.legend()
+    plt.xticks(keys)
+    green_patch = mpatches.Patch(color='green', label='Settled')
+    red_patch = mpatches.Patch(color='red', label='Unsettled')
+
+    plt.legend(handles=[green_patch, red_patch])
+    
+   # plt.legend(bar, ['Settled', 'Unsettled'])
+    plt.xlabel('Outcome')
+    plt.ylabel('Number of transactions')
     plt.show()
 
-    settle = pm4py.filter_trace_segments(event_log, [["...", "Settling"]], positive=True)
+    return
 
+def value_transactions_settled_unsettled(event_log, transactions):
+    histogram_dict=dict()
+    settled_transactions = pm4py.filter_trace_segments(event_log, [["...", "Settling"]], positive=True)
+    settled_transactions_id=settled_transactions.case_id.unique()
+    settled_transactions_id=[int(tid) for tid in settled_transactions_id]
+    settled_transaction_value=sum(transactions["Value"][transactions['TID'].isin(settled_transactions_id)])
+    histogram_dict["Settled value"]=settled_transaction_value
+
+
+    
+
+    unsettled_transactions = pm4py.filter_trace_segments(event_log, [["...", "Settling"]], positive=False)
+    unsettled_transactions_id=unsettled_transactions.case_id.unique()
+    unsettled_transactions_id=[int(tid) for tid in unsettled_transactions_id]
+    unsettled_transaction_value=sum(transactions["Value"][transactions['TID'].isin(unsettled_transactions_id)])
+    histogram_dict["Unsettled value"]=unsettled_transaction_value
+
+    keys = list(histogram_dict.keys())
+    values = list(histogram_dict.values())
+
+    bar=plt.bar(keys, values)
+    plt.xlabel('Keys')
+    plt.ylabel('Values')
+    plt.title('Value of transactions settled and unsettled')
+    locale.setlocale(locale.LC_ALL, '')
+    formatter = lambda x, _: locale.format_string('%d', x, grouping=True)
+    plt.gca().yaxis.set_major_formatter(formatter)
+    bar=plt.bar(keys, values, color=['green', 'red'])  # Green for settled, red for unsettled
+    for bar, value in zip(bar, values):
+        plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), locale.format_string('%d', value, grouping=True), ha='center', va='bottom')
+    
+    # Add a horizontal line for the mean value
+    plt.legend()
+    plt.xticks(keys)
+    green_patch = mpatches.Patch(color='green', label='Settled')
+    red_patch = mpatches.Patch(color='red', label='Unsettled')
+
+    plt.legend(handles=[green_patch, red_patch])
+    
+   # plt.legend(bar, ['Settled', 'Unsettled'])
+    plt.xlabel('Outcome')
+    plt.ylabel('Value of transactions')
+    plt.show()
 
     return
 
