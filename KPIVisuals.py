@@ -239,6 +239,7 @@ def value_transactions_settled_unsettled(event_log, transactions):
 
     keys = list(histogram_dict.keys())
     values = list(histogram_dict.values())
+    settlement_efficiency=histogram_dict["Settled value"]/(histogram_dict["Settled value"]+histogram_dict["Unsettled value"])
 
     bar=plt.bar(keys, values)
     plt.xlabel('Keys')
@@ -256,8 +257,10 @@ def value_transactions_settled_unsettled(event_log, transactions):
     plt.xticks(keys)
     green_patch = mpatches.Patch(color='green', label='Settled')
     red_patch = mpatches.Patch(color='red', label='Unsettled')
+    efficiency_patch = mpatches.Patch(color='blue', label=f'Settlement Efficiency: {settlement_efficiency:.2f}')
 
-    plt.legend(handles=[green_patch, red_patch])
+
+    plt.legend(handles=[green_patch, red_patch,efficiency_patch])
     
    # plt.legend(bar, ['Settled', 'Unsettled'])
     plt.xlabel('Outcome')
