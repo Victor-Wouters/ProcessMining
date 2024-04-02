@@ -7,7 +7,7 @@ import Visuals
 import EventlogDescription
 
 if __name__ == "__main__":
-    event_log = ImportData.read_in_data('data\eventlogtest2.csv')
+    event_log = ImportData.read_in_data('data\eventlogtest.csv')
     print(event_log)
     ActivitiesStats.activities(event_log)
     BPMN.process_tree_to_BPMN(event_log)
@@ -16,6 +16,6 @@ if __name__ == "__main__":
     Visuals.process_map_DFG_algorithm(event_log)
     Visuals.process_map_Heuristics_Miner(event_log)
     EventlogDescription.log_statistics(event_log)
-    event_log1 = ImportData.read_in_data('data\eventlogtest3.csv')
+    #event_log1 = ImportData.read_in_data('data\eventlogtest3.csv')
 
    
