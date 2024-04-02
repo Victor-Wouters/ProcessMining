@@ -88,7 +88,7 @@ def histogram_unsettled(event_log, event_log_df):
     id_settle_after_unsettled = [int(tid) for tid in id_settle_after_unsettled]
     transactions_settle_after_unsettled = event_log_df[event_log_df['TID'].isin(id_settle_after_unsettled)]
     transactions_settle_after_unsettled = transactions_settle_after_unsettled[transactions_settle_after_unsettled['Activity'].isin(['Settling'])]
-    
+    print(transactions_settle_after_unsettled)
     id_unsettled_no_credit=[int(tid) for tid in id_unsettled_no_credit]
     transactions_unsettled = event_log_df[event_log_df['TID'].isin( id_unsettled_no_credit)]
     transactions_unsettled = transactions_unsettled[transactions_unsettled['Activity'].isin(["Waiting in queue unsettled"])]
@@ -106,16 +106,16 @@ def histogram_unsettled(event_log, event_log_df):
 
 
     # Plot histogram
-    ax=hist_data_settle_after_unsettled.plot(kind='bar', color='skyblue')
+    hist_data_settle_after_unsettled.plot(kind='bar', color='skyblue')
     plt.title('Cases settled after being unsettled per hour')
     plt.xlabel('Hour')
     plt.ylabel('Number of Cases')
     plt.xticks(rotation=45)
-    for p in ax.patches:
-        if p.get_height()!=0:
-           ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width() / 2., p.get_height()), 
-                      ha='center', va='center', fontsize=8, color='black', xytext=(0, 5), 
-                       textcoords='offset points')
+    #for p in ax.patches:
+     #   if p.get_height()!=0:
+      #     ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width() / 2., p.get_height()), 
+                     # ha='center', va='center', fontsize=8, color='black', xytext=(0, 5), 
+                      # textcoords='offset points')
 
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.show()
