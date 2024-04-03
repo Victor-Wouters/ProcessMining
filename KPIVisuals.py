@@ -74,57 +74,92 @@ def histogram_val_match_sett(event_log_df):
     return
 
 def histogram_unsettled(event_log, event_log_df):
-    # Filter traces where the pattern: "... -> Waiting in queue unsettled -> ... -> Settling" occurs
-    settle_after_unsettled = pm4py.filter_trace_segments(event_log, [["...", "Waiting in queue unsettled", "...", "Settling"]], positive=True)
-    unsettled_no_credit=pm4py.filter_trace_segments(event_log, [["...", "Waiting in queue unsettled"]], positive=True)
+    df=event_log_df
+    df['Starttime'] = pd.to_datetime(df['Starttime'])
     
-    
-    # Extract case ids where settling occurs after being unsettled
-    id_settle_after_unsettled = settle_after_unsettled.case_id.unique()
-    id_unsettled_no_credit=unsettled_no_credit.case_id.unique()
-    print(id_settle_after_unsettled)
+    date_dict=dict()
+    # Get unique dates
+    unique_dates = event_log_df['Starttime'].dt.date.unique()
+    for date in unique_dates:
 
-    # Convert 'Starttime' column to datetime format
-    event_log_df['Starttime'] = pd.to_datetime(event_log_df['Starttime'])
+        # Filter traces where the pattern: "... -> Waiting in queue unsettled -> ... -> Settling" occurs
+        settle_after_unsettled = pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...", "Waiting in queue unsettled", "...", "Settling"]], positive=True)
+        unsettled_no_credit=pm4py.filter_trace_segments(event_log, [["...", "Waiting in queue unsettled"]], positive=True)
+        
+        
+        # Extract case ids where settling occurs after being unsettled
+        id_settle_after_unsettled = settle_after_unsettled.case_id.unique()
+        id_unsettled_no_credit=unsettled_no_credit.case_id.unique()
+        print(id_settle_after_unsettled)
 
-    # Extract hour from 'Starttime'
-    event_log_df['Hour'] = event_log_df['Starttime'].dt.hour
+        # Convert 'Starttime' column to datetime format
+        event_log_df['Starttime'] = pd.to_datetime(event_log_df['Starttime'])
 
-    # Filter DataFrame for case ids that settle after being unsettled
-    # Convert case ids to string for consistency
-    id_settle_after_unsettled = [int(tid) for tid in id_settle_after_unsettled]
-    transactions_settle_after_unsettled = event_log_df[event_log_df['TID'].isin(id_settle_after_unsettled)]
-    transactions_settle_after_unsettled = transactions_settle_after_unsettled[transactions_settle_after_unsettled['Activity'].isin(['Settling'])]
-    print(transactions_settle_after_unsettled)
-    id_unsettled_no_credit=[int(tid) for tid in id_unsettled_no_credit]
-    transactions_unsettled = event_log_df[event_log_df['TID'].isin( id_unsettled_no_credit)]
-    transactions_unsettled = transactions_unsettled[transactions_unsettled['Activity'].isin(["Waiting in queue unsettled"])]
-    print(transactions_unsettled)
+        # Extract hour from 'Starttime'
+        event_log_df['Hour'] = event_log_df['Starttime'].dt.hour
 
-    # Group by hour and count cases
-    hist_data_settle_after_unsettled = transactions_settle_after_unsettled.groupby('Hour').size()
-    hist_data_unsettled = transactions_unsettled.groupby('Hour').size()
-    
-    # Bar for transactions unsettled
-   # plt.bar(hist_data_settle_after_unsettled.index, hist_data_settle_after_unsettled.values, color='green', alpha=0.7, label='Settle After Unsettled')
-    # Bar for transactions settled after being unsettled
-   # plt.bar(hist_data_unsettled.index, hist_data_unsettled.values, color='blue', alpha=0.7, label='In Queue unsettled')
+        # Filter DataFrame for case ids that settle after being unsettled
+        # Convert case ids to string for consistency
+        id_settle_after_unsettled = [int(tid) for tid in id_settle_after_unsettled]
+        transactions_settle_after_unsettled = event_log_df[event_log_df['TID'].isin(id_settle_after_unsettled)]
+        transactions_settle_after_unsettled = transactions_settle_after_unsettled[transactions_settle_after_unsettled['Activity'].isin(['Settling'])]
+        print(transactions_settle_after_unsettled)
+        id_unsettled_no_credit=[int(tid) for tid in id_unsettled_no_credit]
+        transactions_unsettled = event_log_df[event_log_df['TID'].isin( id_unsettled_no_credit)]
+        transactions_unsettled = transactions_unsettled[transactions_unsettled['Activity'].isin(["Waiting in queue unsettled"])]
+        print(transactions_unsettled)
+
+        # Group by hour and count cases
+        hist_data_settle_after_unsettled = transactions_settle_after_unsettled.groupby('Hour').size()
+        date_dict[date]=len(id_settle_after_unsettled)
+        hist_data_unsettled = transactions_unsettled.groupby('Hour').size()
+        
+        # Bar for transactions unsettled
+    # plt.bar(hist_data_settle_after_unsettled.index, hist_data_settle_after_unsettled.values, color='green', alpha=0.7, label='Settle After Unsettled')
+        # Bar for transactions settled after being unsettled
+    # plt.bar(hist_data_unsettled.index, hist_data_unsettled.values, color='blue', alpha=0.7, label='In Queue unsettled')
   
 
+        '''
+        # Plot histogram
+        hist_data_settle_after_unsettled.plot(kind='bar', color='skyblue')
+        plt.title('Cases settled after being unsettled per hour')
+        plt.xlabel('Hour')
+        plt.ylabel('Number of Cases')
+        plt.xticks(rotation=45)
+        #for p in ax.patches:
+        #   if p.get_height()!=0:
+        #     ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width() / 2., p.get_height()), 
+                        # ha='center', va='center', fontsize=8, color='black', xytext=(0, 5), 
+                        # textcoords='offset points')
 
-    # Plot histogram
-    hist_data_settle_after_unsettled.plot(kind='bar', color='skyblue')
-    plt.title('Cases settled after being unsettled per hour')
-    plt.xlabel('Hour')
-    plt.ylabel('Number of Cases')
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
+        plt.show()'''
+      # Extract dates and corresponding violations counts from the dictionary
+    dates = list(date_dict.keys())
+    violations_count = list(date_dict.values())
+
+    # Create the bar chart
+    plt.figure(figsize=(10, 6))
+    bars = plt.bar(dates, violations_count, color='skyblue')
+
+    # Add values on top of the bars
+    for bar, value in zip(bars, violations_count):
+        plt.text(bar.get_x() + bar.get_width() / 2, 
+                bar.get_height() + 0.05, 
+                f'{value}', 
+                ha='center', 
+                va='bottom')
+
+    plt.title('Number of transactions settled by recycling per day')
+    plt.xlabel('Date')
+    plt.ylabel('Number of Violations')
     plt.xticks(rotation=45)
-    #for p in ax.patches:
-     #   if p.get_height()!=0:
-      #     ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width() / 2., p.get_height()), 
-                     # ha='center', va='center', fontsize=8, color='black', xytext=(0, 5), 
-                      # textcoords='offset points')
 
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    # Set x-axis ticks to only include dates with violations
+    plt.xticks(dates)
+
+    plt.tight_layout()
     plt.show()
     return
 

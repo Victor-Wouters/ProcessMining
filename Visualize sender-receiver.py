@@ -28,12 +28,12 @@ while transaction_counter<transactions:
 print(df)
 '''
 #read your transaction data here
-df=pd.read_csv('TRANSACTION1 (4).csv', sep=';')
+df=pd.read_csv('data/TRANSACTION1.csv', sep=';')
 pair_counts = df.groupby(['FromParticipantId', 'ToParticipantId']).size().reset_index(name='count')
 
 
 plt.figure(figsize=(8, 6))
-plt.scatter(pair_counts['FromParticipantId'], pair_counts['ToParticipantId'], s=pair_counts['count']*50, alpha=0.5)
+plt.scatter(pair_counts['FromParticipantId'], pair_counts['ToParticipantId'], s=pair_counts['count']*5, alpha=0.5)
 
 
 for i, row in pair_counts.iterrows():
