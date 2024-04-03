@@ -31,10 +31,11 @@ def per_day(event_log_df, event_log, transactions):
     # Get unique dates
     unique_dates = event_log_df['Start_date'].unique()
     previous_dates=[]
+    
 
     for date in unique_dates:
         print(date)
-        
+        histogram_date=dict()
         event_log_day=event_log[event_log['Starttime'].dt.date==date]
         #Visuals.process_map_Heuristics_Miner(event_log_day)
         settled_transactions = pm4py.filter_trace_segments(event_log_day, [["...", "Settling"]], positive=True)
@@ -75,12 +76,6 @@ def per_day(event_log_df, event_log, transactions):
         print("settlement efficiency:", settled_value_day/processed_value_day)
 
 
-
-      
-
-
-
-    
 
     
 

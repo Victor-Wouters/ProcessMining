@@ -39,31 +39,38 @@ def settlements_graph(event_log_df):
 def histogram_val_match_sett(event_log_df):
     df=event_log_df
     df['Starttime'] = pd.to_datetime(df['Starttime'])
+    
 
-    # Extract hour from Starttime
-    df['Hour'] = df['Starttime'].dt.hour
+    # Get unique dates
+    unique_dates = event_log_df['Starttime'].dt.date.unique()
+    for date in unique_dates:
+        hist_data=0
+        # Extract hour from Starttime
+        df['Hour'] = df['Starttime'].dt.hour
+        filtered_df=df[df["Starttime"].dt.date==date]
+        print(filtered_df)
 
-    # Filter data for Settling and Validating activities
-    filtered_df = df[df['Activity'].isin([ 'Validating','Matching','Settling'])]
+        # Filter data for Settling and Validating activities
+        filtered_df = filtered_df[filtered_df['Activity'].isin([ 'Validating','Matching','Settling'])]
 
-    # Group by hour and activity, count cases
-    hist_data = filtered_df.groupby(['Hour', 'Activity']).size().unstack(fill_value=0)
-    hist_data = hist_data[['Validating', 'Matching', 'Settling']]
+        # Group by hour and activity, count cases
+        hist_data = filtered_df.groupby(['Hour', 'Activity']).size().unstack(fill_value=0)
+        hist_data = hist_data[['Validating', 'Matching', 'Settling']]
 
 
-    # Plotting histogram
-    ax=hist_data.plot(kind='bar', stacked=False)
-    plt.title('Cases validated, matched and settled per hour')
-    plt.xlabel('Hour')
-    plt.ylabel('Number of Cases')
-    plt.xticks(range(0, 24, 1), [f"{i}-{i+1}" for i in range(0, 24, 1)], rotation=45)
-    plt.legend(title='Activity')
-    for p in ax.patches:
-        if p.get_height()!=0:
-            ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width() / 2., p.get_height()), 
-                        ha='center', va='center', fontsize=6, color='black', xytext=(0, 5), 
-                        textcoords='offset points')
-    plt.show()
+        # Plotting histogram
+        ax=hist_data.plot(kind='bar', stacked=False)
+        plt.title(f'Cases validated, matched and settled per hour - Date: {date}')
+        plt.xlabel('Hour')
+        plt.ylabel('Number of Cases')
+        plt.xticks(range(0, 24, 1), [f"{i}-{i+1}" for i in range(0, 24, 1)], rotation=45)
+        plt.legend(title='Activity')
+        for p in ax.patches:
+            if p.get_height()!=0:
+                ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width() / 2., p.get_height()), 
+                            ha='center', va='center', fontsize=6, color='black', xytext=(0, 5), 
+                            textcoords='offset points')
+        plt.show()
     return
 
 def histogram_unsettled(event_log, event_log_df):
@@ -184,42 +191,50 @@ def settlement_efficiency_participant(event_log,transactions):
     return
 
 def number_transactions_settled_unsettled(event_log):
-    histogram_dict=dict()
-    settled_transactions = pm4py.filter_trace_segments(event_log, [["...", "Settling"]], positive=True)
-    settled_transactions_id=settled_transactions.case_id.unique()
-    settled_transactions_id=[int(tid) for tid in settled_transactions_id]
-    number_settled=len(settled_transactions_id)
-    histogram_dict["settled"]=number_settled
-
-    unsettled_transactions = pm4py.filter_trace_segments(event_log, [["...", "Settling"]], positive=False)
-    unsettled_transactions_id=unsettled_transactions.case_id.unique()
-    unsettled_transactions_id=[int(tid) for tid in unsettled_transactions_id]
-    number_unsettled=len(unsettled_transactions_id)
-    histogram_dict["unsettled"]=number_unsettled
-
-    keys = list(histogram_dict.keys())
-    values = list(histogram_dict.values())
-
-    bar=plt.bar(keys, values)
-    plt.xlabel('Keys')
-    plt.ylabel('Values')
-    plt.title('Number of transactions settled and unsettled')
-    bar=plt.bar(keys, values, color=['green', 'red'])  # Green for settled, red for unsettled
-    for bar, value in zip(bar, values):
-        plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), round(value,2), ha='center', va='bottom')
+    df=event_log
+    event_log['Starttime'] = pd.to_datetime(df['Starttime'])
     
-    # Add a horizontal line for the mean value
-    plt.legend()
-    plt.xticks(keys)
-    green_patch = mpatches.Patch(color='green', label='Settled')
-    red_patch = mpatches.Patch(color='red', label='Unsettled')
 
-    plt.legend(handles=[green_patch, red_patch])
-    
-   # plt.legend(bar, ['Settled', 'Unsettled'])
-    plt.xlabel('Outcome')
-    plt.ylabel('Number of transactions')
-    plt.show()
+    # Get unique dates
+    unique_dates = event_log['Starttime'].dt.date.unique()
+    for date in unique_dates:
+        histogram_dict=dict()
+        settled_transactions = pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...", "Settling"]], positive=True)
+        settled_transactions_id=settled_transactions.case_id.unique()
+        settled_transactions_id=[int(tid) for tid in settled_transactions_id]
+        number_settled=len(settled_transactions_id)
+        histogram_dict["settled"]=number_settled
+
+        unsettled_transactions = pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...", "Settling"]], positive=False)
+        print(unsettled_transactions)
+        unsettled_transactions_id=unsettled_transactions.case_id.unique()
+        unsettled_transactions_id=[int(tid) for tid in unsettled_transactions_id]
+        number_unsettled=len(unsettled_transactions_id)
+        histogram_dict["unsettled"]=number_unsettled
+
+        keys = list(histogram_dict.keys())
+        values = list(histogram_dict.values())
+
+        bar=plt.bar(keys, values)
+        plt.xlabel('Keys')
+        plt.ylabel('Values')
+        plt.title(f'Number of transactions settled and unsettled - Date: {date}')
+        bar=plt.bar(keys, values, color=['green', 'red'])  # Green for settled, red for unsettled
+        for bar, value in zip(bar, values):
+            plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), round(value,2), ha='center', va='bottom')
+        
+        # Add a horizontal line for the mean value
+        plt.legend()
+        plt.xticks(keys)
+        green_patch = mpatches.Patch(color='green', label='Settled')
+        red_patch = mpatches.Patch(color='red', label='Unsettled')
+
+        plt.legend(handles=[green_patch, red_patch])
+        
+    # plt.legend(bar, ['Settled', 'Unsettled'])
+        plt.xlabel('Outcome')
+        plt.ylabel('Number of transactions')
+        plt.show()
 
     return
 
