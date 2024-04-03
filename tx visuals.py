@@ -57,21 +57,25 @@ def per_day(event_log_df, event_log, transactions):
 
         #print(len(recycled_transactions_day_id))
         #print(recycled_transactions_day_id)
-        validation_transactions = pm4py.filter_trace_segments(event_log, [["Validating","..."]], positive=True)
+        validation_transactions = pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date !=date], [["Checking balance and credit","..."]], positive=True)
       
-        recycled_transactions_day_previous_days = validation_transactions[(validation_transactions["Starttime"].dt.date <date) & validation_transactions.case_id.isin(recycled_transactions_day_id)]
+        recycled_transactions_day_previous_days = validation_transactions[(validation_transactions["Starttime"].dt.date !=date) & validation_transactions.case_id.isin(recycled_transactions_day_id)]
         recycled_transactions_day_previous_days_id=recycled_transactions_day_previous_days.case_id.unique()
         recycled_transactions_day_previous_days_id=[int(tid) for tid in recycled_transactions_day_previous_days_id]
-        print("number of transactions tried to recycle from previous days:", len(recycled_transactions_day_previous_days_id))
+        #print("number of transactions tried to recycle from previous days:", len(recycled_transactions_day_previous_days_id))
+        #print("recycled:",recycled_transactions_day_previous_days_id)
+        #print("processed:",processed_transactions_id)
      
 
         settled_value_day=sum(transactions["Value"][transactions['TID'].isin(settled_transactions_id)])
         #print(settled_value_day)
+        
+        '''for element in recycled_transactions_day_previous_days_id:
+            processed_transactions_id.append(element)'''
+        print("total processed:" ,len(processed_transactions_id))
 
-        processed_transactions_id_total=recycled_transactions_day_previous_days_id+processed_transactions_id
-
-        processed_value_day=sum(transactions["Value"][transactions['TID'].isin(processed_transactions_id_total)])
-        #print(processed_value_day)
+        processed_value_day=sum(transactions["Value"][transactions['TID'].isin(processed_transactions_id)])
+        
 
         print("settlement efficiency:", settled_value_day/processed_value_day)
 
@@ -121,9 +125,69 @@ def number_transactions_settled_unsettled(event_log):
 
     return
 
-event_log=read_data('data/eventlogtx2.csv')
-transactions = pd.read_csv('data/TRANSACTION1_tx .csv', sep=';')
 
-print(event_log)
-event_log_df= pd.read_csv('data/eventlogtx2.csv', sep=';')
+def over_deadline(event_log_df, event_log, transactions):
+    event_log_df['Starttime'] = pd.to_datetime(event_log_df['Starttime'])
+
+    # Extract date component from 'starttime' column
+    event_log_df['Start_date'] = event_log_df['Starttime'].dt.date
+    #transactions['SettlementDeadline'] = transactions['SettlementDeadline'].dt.date
+    transactions['SettlementDeadline'] = pd.to_datetime(transactions['SettlementDeadline'])
+
+
+    # Get unique dates
+    unique_dates = event_log_df['Start_date'].unique()
+    violations=dict()
+    for date in unique_dates:
+        #print(date)
+        merged_df=join_eventlog_transactions(event_log_df, transactions)
+        settled_cases=merged_df[merged_df["Activity"]=="Settling"]
+        deadline_violated=settled_cases[settled_cases["Starttime"].dt.date>settled_cases["SettlementDeadline"].dt.date]
+        #print(deadline_violated)
+
+        deadline_violated_day=deadline_violated[deadline_violated["Starttime"].dt.date==date]
+        #print("number of deadline violations on", date,":", len(deadline_violated_day))
+        #print("Cases that violate the deadline:", deadline_violated_day["TID"].tolist())
+        violations[date]=len(deadline_violated_day)
+
+    
+   # Extract dates and corresponding violations counts from the dictionary
+    dates = list(violations.keys())
+    violations_count = list(violations.values())
+
+    # Create the bar chart
+    plt.figure(figsize=(10, 6))
+    bars = plt.bar(dates, violations_count, color='skyblue')
+
+    # Add values on top of the bars
+    for bar, value in zip(bars, violations_count):
+        plt.text(bar.get_x() + bar.get_width() / 2, 
+                bar.get_height() + 0.05, 
+                f'{value}', 
+                ha='center', 
+                va='bottom')
+
+    plt.title('Number of Violations for Each Day')
+    plt.xlabel('Date')
+    plt.ylabel('Number of Violations')
+    plt.xticks(rotation=45)
+
+    # Set x-axis ticks to only include dates with violations
+    plt.xticks(dates)
+
+    plt.tight_layout()
+    plt.show()
+
+
+    return
+
+def join_eventlog_transactions(event_log, transactions):
+    merged_df = pd.merge(event_log, transactions, left_on=['TID'], right_on=['TID'], how='inner')
+    return merged_df
+
+event_log=read_data('data/eventlogweek2.csv')
+transactions = pd.read_csv('data/TRANSACTION1week2.csv', sep=';')
+event_log_df= pd.read_csv('data/eventlogweek2.csv', sep=';')
 per_day(event_log_df, event_log, transactions)
+over_deadline(event_log_df, event_log, transactions)
+#join_eventlog_transactions(event_log_df, transactions)
