@@ -1,0 +1,31 @@
+# Import of required libraries and packages
+import igraph as ig
+import easygui
+from matplotlib import pyplot as plt
+import numpy as np
+import scipy
+import statistics
+import pandas as pd
+import cairo
+
+print(ig.__version__)
+
+def transform_transactions(transactions):
+    #insert join with particpants here
+    network_df=transactions[["FromParticipantId","ToParticipantId","Value"]]
+    return network_df
+
+def create_and_draw_graph(network_df):
+    g=ig.Graph()
+    g = g.DataFrame(network_df, directed=True)
+
+
+    return g
+    
+transactions = pd.read_csv('data/TRANSACTION22_3.csv', sep=';')
+participants=pd.read_csv('data/PARTICIPANTS1.csv', sep=';')
+network_df=transform_transactions(transactions)
+g=create_and_draw_graph(network_df)
+ig.plot(g)
+print(g.es())
+print(g.vs())
