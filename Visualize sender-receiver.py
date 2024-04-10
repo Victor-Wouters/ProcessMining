@@ -29,6 +29,7 @@ print(df)
 '''
 #read your transaction data here
 df=pd.read_csv('data/TRANSACTION1.csv', sep=';')
+df=df[df["FromAccountId"]!=0]
 pair_counts = df.groupby(['FromParticipantId', 'ToParticipantId']).size().reset_index(name='count')
 
 

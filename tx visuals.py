@@ -208,9 +208,9 @@ def join_eventlog_transactions(event_log, transactions):
     merged_df = pd.merge(event_log, transactions, left_on=['TID'], right_on=['TID'], how='inner')
     return merged_df
 
-event_log=read_data('data/eventlog.csv')
-transactions = pd.read_csv('data/TRANSACTION1.csv', sep=';')
-event_log_df= pd.read_csv('data/eventlog.csv', sep=';')
+event_log=read_data('data/eventlog_T0.csv')
+transactions = pd.read_csv('data/TRANSACTION1_T0.csv', sep=';')
+event_log_df= pd.read_csv('data/eventlog_T0.csv', sep=';')
 per_day(event_log_df, event_log, transactions)
 over_deadline(event_log_df, event_log, transactions)
 #join_eventlog_transactions(event_log_df, transactions)

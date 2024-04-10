@@ -9,9 +9,9 @@ import EventSequences
 import KPIVisuals
 
 if __name__ == "__main__":
-    event_log_df= pd.read_csv('data/eventlog_no_cr.csv', sep=';')
-    event_log = ImportData.read_in_data('data/eventlog_no_cr.csv')
-    transactions = pd.read_csv('data/TRANSACTION1_no_cre.csv', sep=';')
+    event_log_df= pd.read_csv('data/eventlog_T0.csv', sep=';')
+    event_log = ImportData.read_in_data('data/eventlog_T0.csv')
+    transactions = pd.read_csv('data/TRANSACTION1_T0.csv', sep=';')
     #print(event_log)
     
     ActivitiesStats.activities(event_log)
