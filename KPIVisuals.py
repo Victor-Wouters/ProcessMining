@@ -72,6 +72,92 @@ def histogram_val_match_sett(event_log_df):
                             textcoords='offset points')
         plt.show()
     return
+def histogram_val_match_sett_30(event_log_df):
+    df = event_log_df
+    df['Starttime'] = pd.to_datetime(df['Starttime'])
+
+    # Get unique dates
+    unique_dates = event_log_df['Starttime'].dt.date.unique()
+    for date in unique_dates:
+        hist_data = 0
+        # Extract hour and minute from Starttime
+        df['Hour_Minute'] = df['Starttime'].dt.strftime('%H:%M')
+
+        filtered_df = df[df["Starttime"].dt.date == date]
+
+        # Filter data for Settling and Validating activities
+        filtered_df = filtered_df[filtered_df['Activity'].isin(['Validating', 'Matching', 'Settling'])]
+
+        # Group by 30-minute intervals and activity, count cases
+        hist_data = filtered_df.groupby([pd.Grouper(key='Starttime', freq='30T'), 'Activity']).size().unstack(fill_value=0)
+
+        # Plotting histogram
+        ax = hist_data.plot(kind='bar', stacked=False)
+        plt.figsize=(16, 10)
+        plt.title(f'Cases validated, matched and settled per 30 minutes - Date: {date}')
+        plt.xlabel('Time')
+        plt.ylabel('Number of Cases')
+
+        # Adjust x-axis ticks to align with the center of each 30-minute interval
+        plt.xticks(range(len(hist_data.index)), hist_data.index.strftime('%H:%M'), rotation=45, ha='right')
+
+        plt.legend(title='Activity')
+
+        for p in ax.patches:
+            if p.get_height() != 0:
+                ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width() / 2., p.get_height()),
+                            ha='center', va='center', fontsize=6, color='black', xytext=(0, 5),
+                            textcoords='offset points')
+        plt.show()
+    return
+
+def histogram_val_match_sett_uneven(event_log_df):
+    df = event_log_df.copy()
+    df['Starttime'] = pd.to_datetime(df['Starttime'])
+
+    # Get unique dates
+    unique_dates = df['Starttime'].dt.date.unique()
+    for date in unique_dates:
+        # Extract hour and minute from Starttime
+        df['Hour_Minute'] = df['Starttime'].dt.strftime('%H:%M')
+
+        filtered_df = df[df["Starttime"].dt.date == date]
+
+        # Filter data for Settling and Validating activities
+        filtered_df = filtered_df[filtered_df['Activity'].isin(['Validating', 'Matching', 'Settling'])]
+        during_day=filtered_df[filtered_df['Starttime'].dt.hour.between(2, 22)].groupby([pd.Grouper(key='Starttime', freq='60T'), 'Activity']).size().unstack(fill_value=0)
+        before_opening=filtered_df[filtered_df['Starttime'].dt.hour.between(0, 1)].groupby([pd.Grouper(key='Starttime', freq='30T'), 'Activity']).size().unstack(fill_value=0)
+        after_opening=filtered_df[filtered_df['Starttime'].dt.hour.between(23, 24)].groupby([pd.Grouper(key='Starttime', freq='30T'), 'Activity']).size().unstack(fill_value=0)
+        before_opening.index = before_opening.index.strftime('%H:%M')
+        during_day.index=during_day.index.strftime('%H:%M')
+        after_opening.index = after_opening.index.strftime('%H:%M')
+
+        # Combine data
+      
+        hist_data = pd.concat([before_opening, during_day,after_opening], axis=0, sort=False)
+        print(hist_data)
+     
+
+        # Plotting histogram
+        ax = hist_data.plot(kind='bar', stacked=False)
+        plt.title(f'Cases validated, matched and settled per hour - Date: {date}')
+        plt.xlabel('Time')
+        plt.ylabel('Number of Cases')
+
+        # Customize x-axis ticks
+        plt.xticks(range(len(hist_data.index)), hist_data.index, rotation=45, ha='right')
+        plt.legend(title='Activity')
+
+        for p in ax.patches:
+            if p.get_height() != 0:
+                ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width() / 2., p.get_height()),
+                            ha='center', va='center', fontsize=6, color='black', xytext=(0, 5),
+                            textcoords='offset points')
+        plt.show()
+
+       
+    return
+
 
 def histogram_unsettled(event_log, event_log_df):
     df=event_log_df
