@@ -7,7 +7,7 @@ import matplotlib.ticker as mticker
 import locale
 import datetime
 import time
-
+import Visuals
 
 
 def settlements_graph(event_log_df):
@@ -43,6 +43,7 @@ def histogram_val_match_sett(event_log_df):
 
     # Get unique dates
     unique_dates = event_log_df['Starttime'].dt.date.unique()
+    unique_dates=sorted(unique_dates)
     for date in unique_dates:
         hist_data=0
         # Extract hour from Starttime
@@ -78,6 +79,7 @@ def histogram_val_match_sett_30(event_log_df):
 
     # Get unique dates
     unique_dates = event_log_df['Starttime'].dt.date.unique()
+    unique_dates=sorted(unique_dates)
     for date in unique_dates:
         hist_data = 0
         # Extract hour and minute from Starttime
@@ -90,6 +92,8 @@ def histogram_val_match_sett_30(event_log_df):
 
         # Group by 30-minute intervals and activity, count cases
         hist_data = filtered_df.groupby([pd.Grouper(key='Starttime', freq='30T'), 'Activity']).size().unstack(fill_value=0)
+        hist_data = hist_data[['Validating', 'Matching', 'Settling']]
+
 
         # Plotting histogram
         ax = hist_data.plot(kind='bar', stacked=False)
@@ -117,6 +121,7 @@ def histogram_val_match_sett_uneven(event_log_df):
 
     # Get unique dates
     unique_dates = df['Starttime'].dt.date.unique()
+    unique_dates=sorted(unique_dates)
     for date in unique_dates:
         # Extract hour and minute from Starttime
         df['Hour_Minute'] = df['Starttime'].dt.strftime('%H:%M')
@@ -131,11 +136,12 @@ def histogram_val_match_sett_uneven(event_log_df):
         before_opening.index = before_opening.index.strftime('%H:%M')
         during_day.index=during_day.index.strftime('%H:%M')
         after_opening.index = after_opening.index.strftime('%H:%M')
-
+       
+    
         # Combine data
       
         hist_data = pd.concat([before_opening, during_day,after_opening], axis=0, sort=False)
-        print(hist_data)
+        hist_data = hist_data[['Validating', 'Matching', 'Settling']]
      
 
         # Plotting histogram
@@ -159,265 +165,299 @@ def histogram_val_match_sett_uneven(event_log_df):
     return
 
 
-def histogram_unsettled(event_log, event_log_df):
-    df=event_log_df
-    df['Starttime'] = pd.to_datetime(df['Starttime'])
+def histogram_failed_to_settle(event_log):
+   
+    event_log['Starttime'] = pd.to_datetime(event_log['Starttime'])
     
-    date_dict=dict()
+    date_dict_unsettled=dict()
     # Get unique dates
-    unique_dates = event_log_df['Starttime'].dt.date.unique()
+    unique_dates = event_log['Starttime'].dt.date.unique()
+    unique_dates=sorted(unique_dates)
+    tried_to_settle=dict()
+
     for date in unique_dates:
 
         # Filter traces where the pattern: "... -> Waiting in queue unsettled -> ... -> Settling" occurs
-        settle_after_unsettled = pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...", "Waiting in queue unsettled", "...", "Settling"]], positive=True)
-        unsettled_no_credit=pm4py.filter_trace_segments(event_log, [["...", "Waiting in queue unsettled"]], positive=True)
-        
-        
-        # Extract case ids where settling occurs after being unsettled
-        id_settle_after_unsettled = settle_after_unsettled.case_id.unique()
+        unsettled_no_credit=pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...", "Waiting in backlog for recycling"]], positive=True)
         id_unsettled_no_credit=unsettled_no_credit.case_id.unique()
-        print(id_settle_after_unsettled)
+        date_dict_unsettled[date]=len(id_unsettled_no_credit)
 
-        # Convert 'Starttime' column to datetime format
-        event_log_df['Starttime'] = pd.to_datetime(event_log_df['Starttime'])
+        processed_transactions = pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...","Positioning", "..."]], positive=True)
+        processed_transactions_id=processed_transactions.case_id.unique()
+        number_processed=len(processed_transactions_id)
+        tried_to_settle[date]=number_processed
 
-        # Extract hour from 'Starttime'
-        event_log_df['Hour'] = event_log_df['Starttime'].dt.hour
+    # Extract dates and corresponding violations counts from the dictionary
+    dates = tried_to_settle.keys()
+    tried_to_settle_values= tried_to_settle.values()
+    failed_to_settle =date_dict_unsettled.values()
 
-        # Filter DataFrame for case ids that settle after being unsettled
-        # Convert case ids to string for consistency
-        id_settle_after_unsettled = [int(tid) for tid in id_settle_after_unsettled]
-        transactions_settle_after_unsettled = event_log_df[event_log_df['TID'].isin(id_settle_after_unsettled)]
-        transactions_settle_after_unsettled = transactions_settle_after_unsettled[transactions_settle_after_unsettled['Activity'].isin(['Settling'])]
-        print(transactions_settle_after_unsettled)
-        id_unsettled_no_credit=[int(tid) for tid in id_unsettled_no_credit]
-        transactions_unsettled = event_log_df[event_log_df['TID'].isin( id_unsettled_no_credit)]
-        transactions_unsettled = transactions_unsettled[transactions_unsettled['Activity'].isin(["Waiting in queue unsettled"])]
-        print(transactions_unsettled)
 
-        # Group by hour and count cases
-        hist_data_settle_after_unsettled = transactions_settle_after_unsettled.groupby('Hour').size()
-        date_dict[date]=len(id_settle_after_unsettled)
-        hist_data_unsettled = transactions_unsettled.groupby('Hour').size()
-        
-        # Bar for transactions unsettled
-    # plt.bar(hist_data_settle_after_unsettled.index, hist_data_settle_after_unsettled.values, color='green', alpha=0.7, label='Settle After Unsettled')
-        # Bar for transactions settled after being unsettled
-    # plt.bar(hist_data_unsettled.index, hist_data_unsettled.values, color='blue', alpha=0.7, label='In Queue unsettled')
+    # Convert dates to numbers for plotting
+    x = range(len(dates))
+
+    # Plot bars for recycling values
+    plt.bar(x, tried_to_settle_values, width=0.4, align='center', label='Total Tried to settle')
+
+    # Plot bars for settled values
+    plt.bar([i + 0.4 for i in x], failed_to_settle, width=0.4, align='center', label='Total Failed to settle')
+
+    # Add labels to bars
+    for i, (recycle, settled) in enumerate(zip(tried_to_settle_values, failed_to_settle)):
+        plt.text(i, recycle, str(recycle), ha='center', va='bottom')
+        plt.text(i + 0.4, settled, str(settled), ha='center', va='bottom')
+
+    # Add x-axis labels (dates)
+    plt.xticks(x, dates)
+    plt.xlabel('Date')
+
+    # Add y-axis label
+    plt.ylabel('Total')
+
+    # Add legend
+    plt.legend()
+    plt.title('Successful versus failed settlements per day')
+
+    # Show plot
+    plt.tight_layout()
+    plt.show()
+    return
+
+def over_deadline(event_log):
+    event_log['Starttime'] = pd.to_datetime(event_log['Starttime'])
+
+    # Extract date component from 'starttime' column
+    event_log['Start_date'] = event_log['Starttime'].dt.date
+    #transactions['SettlementDeadline'] = transactions['SettlementDeadline'].dt.date
+    event_log['SettlementDeadline'] = pd.to_datetime(event_log['SettlementDeadline'])
+
+
+    # Get unique dates
+    unique_dates = event_log['Start_date'].unique()
+    unique_dates=sorted(unique_dates)
+    violations=dict()
+    settled=dict()
+    ratio=dict()
   
+    for date in unique_dates:
+        #print(date)
+        settled_cases=event_log[event_log["Activity"]=="Settling"]
+        deadline_violated=settled_cases[settled_cases["Starttime"].dt.date>settled_cases["SettlementDeadline"].dt.date]
+        #print(deadline_violated)
 
-        '''
-        # Plot histogram
-        hist_data_settle_after_unsettled.plot(kind='bar', color='skyblue')
-        plt.title('Cases settled after being unsettled per hour')
-        plt.xlabel('Hour')
-        plt.ylabel('Number of Cases')
-        plt.xticks(rotation=45)
-        #for p in ax.patches:
-        #   if p.get_height()!=0:
-        #     ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width() / 2., p.get_height()), 
-                        # ha='center', va='center', fontsize=8, color='black', xytext=(0, 5), 
-                        # textcoords='offset points')
+        deadline_violated_day=deadline_violated[deadline_violated["Starttime"].dt.date==date]
+        settled_case_day=settled_cases[settled_cases["Starttime"].dt.date==date]
+        #print("number of deadline violations on", date,":", len(deadline_violated_day))
+        #print("Cases that violate the deadline:", deadline_violated_day["TID"].tolist())
+        violations[date]=len(deadline_violated_day)
+        settled[date]=len(settled_case_day)
+        ratio[date]=len(deadline_violated_day)/len(settled_cases)
+        print(date, settled_case_day, deadline_violated_day)
 
-        plt.grid(axis='y', linestyle='--', alpha=0.7)
-        plt.show()'''
-      # Extract dates and corresponding violations counts from the dictionary
-    dates = list(date_dict.keys())
-    violations_count = list(date_dict.values())
+    
+    ratio = {date: (violations[date] / settled[date]) * 100 for date in violations}
+
+    # Extract dates and corresponding violations counts from the dictionary
+    dates = list(violations.keys())
+    violations_count = list(violations.values())
 
     # Create the bar chart
     plt.figure(figsize=(10, 6))
-    bars = plt.bar(dates, violations_count, color='skyblue')
+    
+    bars = plt.bar(dates, violations_count,color='skyblue')
 
     # Add values on top of the bars
-    for bar, value in zip(bars, violations_count):
+    for bar, value, date in zip(bars, violations_count, dates):
         plt.text(bar.get_x() + bar.get_width() / 2, 
                 bar.get_height() + 0.05, 
-                f'{value}', 
+                f'{value}\nPercentage of settled: {ratio[date]:.2f}%', 
                 ha='center', 
                 va='bottom')
 
-    plt.title('Number of transactions settled by recycling per day')
+    plt.title('Number of cases settling after deadline')
     plt.xlabel('Date')
     plt.ylabel('Number of Violations')
     plt.xticks(rotation=45)
-
-    # Set x-axis ticks to only include dates with violations
-    plt.xticks(dates)
 
     plt.tight_layout()
     plt.show()
     return
 
-
-def settlement_efficiency_participant(event_log,transactions):
-    settled_transactions = pm4py.filter_trace_segments(event_log, [["...", "Settling"]], positive=True)
-    settled_transactions_id=settled_transactions.case_id.unique()
-    settled_transactions_id=[int(tid) for tid in settled_transactions_id]
-    #print(settled_transactions_id)
-    print("number of transactions settled:", len(settled_transactions_id))
-    settlement_participant=dict()
-    processed_transactions=pm4py.filter_trace_segments(event_log, [["...","Validating","..."]], positive=True)
-    #print(processed_transactions)
-    processed_transactions_id=processed_transactions.case_id.unique()
-    processed_transactions_id=[int(tid) for tid in processed_transactions_id]
-
-    number_participants=max(transactions["FromParticipantId"])
-    participant_efficiency=dict()
-    for participant in range(1,number_participants+1):
-        #print("participant:", participant)
-        sending_transactions_of_participant=transactions["Value"][(transactions['FromParticipantId'] == participant) & (transactions['FromAccountId'] != 0) & (transactions['TID'].isin(processed_transactions_id))]
-        print("sending transactions of participant", participant,":", sending_transactions_of_participant, len(sending_transactions_of_participant))
-
-        #print("sending transactions of participant:",sending_transactions_of_participant)
-        total_sending = sum(sending_transactions_of_participant)
-        #print("sending value of participant", participant,":", total_sending)
-
-
-        #print("value of settling transactions:",transactions["Value"][(transactions['FromParticipantId'] == participant) & (transactions['TID'].isin(settled_transactions_id))])
-        sending_settled=transactions["Value"][(transactions['FromParticipantId'] == participant) & (transactions['FromAccountId'] != 0) & (transactions['TID'].isin(settled_transactions_id))]
-        print("settled transactions of participant", participant, ":", sending_settled, len(sending_settled))
-        total_sending_settled=sum(sending_settled)
-        print("participant total settled value", total_sending_settled)
-        settlement_participant[participant]=total_sending_settled
-        
-        
-        settlement_efficiency=total_sending_settled/total_sending
-        #print("settlement efficiencey:",participant,":", settlement_efficiency)
-        participant_efficiency[participant]=settlement_efficiency
-        print(settlement_participant)
-
-    
-    
-    keys = list(participant_efficiency.keys())
-    values = list(participant_efficiency.values())
-    print(participant_efficiency)
-
-    bar=plt.bar(keys, values)
-    plt.xlabel('Keys')
-    plt.ylabel('Values')
-    plt.title('Settlement efficiency for each participant')
-    for bar, value in zip(bar, values):
-        plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), round(value,2), ha='center', va='bottom')
-    mean_value = np.mean(values)
-   # print("mean settlement efficiency", mean_value)
-
-    # Add a horizontal line for the mean value
-   # plt.axhline(y=mean_value, color='r', linestyle='-', label=f'Average Settlement efficiency: {mean_value:.2f}')
-    plt.legend()
-    plt.xticks(keys)
-    plt.xlabel('Participant')
-    plt.ylabel('Settlement efficiency')
-    plt.show()
-    return
-
-def number_transactions_settled_unsettled(event_log):
-    df=event_log
-    event_log['Starttime'] = pd.to_datetime(df['Starttime'])
-    
-
+def histogram_recycled(event_log):
+    event_log['Starttime'] = pd.to_datetime(event_log['Starttime'])
+    cases_in_backlog_eod=[]
+    date_dict_settled=dict()
+    date_dict_recycling=dict()
     # Get unique dates
     unique_dates = event_log['Starttime'].dt.date.unique()
+    unique_dates=sorted(unique_dates)
+
     for date in unique_dates:
-        histogram_dict=dict()
-        settled_transactions = pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...", "Settling"]], positive=True)
-        settled_transactions_id=settled_transactions.case_id.unique()
-        settled_transactions_id=[int(tid) for tid in settled_transactions_id]
-        number_settled=len(settled_transactions_id)
-        histogram_dict["settled"]=number_settled
-
-        unsettled_transactions = pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...", "Settling"]], positive=False)
-        print(unsettled_transactions)
-        unsettled_transactions_id=unsettled_transactions.case_id.unique()
-        unsettled_transactions_id=[int(tid) for tid in unsettled_transactions_id]
-        number_unsettled=len(unsettled_transactions_id)
-        histogram_dict["unsettled"]=number_unsettled
-
-        keys = list(histogram_dict.keys())
-        values = list(histogram_dict.values())
-
-        bar=plt.bar(keys, values)
-        plt.xlabel('Keys')
-        plt.ylabel('Values')
-        plt.title(f'Number of transactions settled and unsettled - Date: {date}')
-        bar=plt.bar(keys, values, color=['green', 'red'])  # Green for settled, red for unsettled
-        for bar, value in zip(bar, values):
-            plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), round(value,2), ha='center', va='bottom')
-        
-        # Add a horizontal line for the mean value
-        plt.legend()
-        plt.xticks(keys)
-        green_patch = mpatches.Patch(color='green', label='Settled')
-        red_patch = mpatches.Patch(color='red', label='Unsettled')
-
-        plt.legend(handles=[green_patch, red_patch])
-        
-    # plt.legend(bar, ['Settled', 'Unsettled'])
-        plt.xlabel('Outcome')
-        plt.ylabel('Number of transactions')
-        plt.show()
-
-    return
-
-def value_transactions_settled_unsettled(event_log, transactions):
-    histogram_dict=dict()
-    settled_transactions = pm4py.filter_trace_segments(event_log, [["...", "Settling"]], positive=True)
-    settled_transactions_id=settled_transactions.case_id.unique()
-    settled_transactions_id=[int(tid) for tid in settled_transactions_id]
-    settled_transaction_value=sum(transactions["Value"][transactions['TID'].isin(settled_transactions_id)])
-    histogram_dict["Settled value"]=settled_transaction_value
-
-    unsettled_transactions = pm4py.filter_trace_segments(event_log, [["...", "Settling"]], positive=False)
-    unsettled_transactions_id=unsettled_transactions.case_id.unique()
-    unsettled_transactions_id=[int(tid) for tid in unsettled_transactions_id]
-    unsettled_transaction_value=sum(transactions["Value"][transactions['TID'].isin(unsettled_transactions_id)])
-    histogram_dict["Unsettled value"]=unsettled_transaction_value
-
-    keys = list(histogram_dict.keys())
-    values = list(histogram_dict.values())
-    settlement_efficiency=histogram_dict["Settled value"]/(histogram_dict["Settled value"]+histogram_dict["Unsettled value"])
-
-    bar=plt.bar(keys, values)
-    plt.xlabel('Keys')
-    plt.ylabel('Values')
-    plt.title('Value of transactions settled and unsettled')
-    locale.setlocale(locale.LC_ALL, '')
-    formatter = lambda x, _: locale.format_string('%d', x, grouping=True)
-    plt.gca().yaxis.set_major_formatter(formatter)
-    bar=plt.bar(keys, values, color=['green', 'red'])  # Green for settled, red for unsettled
-    for bar, value in zip(bar, values):
-        plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), locale.format_string('%d', value, grouping=True), ha='center', va='bottom')
+        cases_backlog_eod=pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...", "Waiting in backlog for recycling"]], positive=True)
+        cases_in_backlog_eod.extend(cases_backlog_eod.case_id.unique())
+   
     
-    # Add a horizontal line for the mean value
+    for date in unique_dates:
+        # Filter traces where the pattern: "... -> Waiting in queue unsettled -> ... -> Settling" occurs
+        settle_after_unsettled_same_day = pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...", "Waiting in backlog for recycling", "...", "Settling"]], positive=True)
+        # Extract case ids where settling occurs after being unsettled
+        id_settle_after_unsettled = settle_after_unsettled_same_day.case_id.unique()
+
+        settle_on_day=pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...","Settling"]], positive=True)
+        settle_on_day_from_backlog=settle_on_day[settle_on_day.case_id.isin(cases_in_backlog_eod)]
+        id_settle_on_day_from_backlog=settle_on_day_from_backlog.case_id.unique()
+
+        total_settled_by_recyling_day=len(id_settle_after_unsettled)+len( id_settle_on_day_from_backlog)
+        date_dict_settled[date]=total_settled_by_recyling_day
+
+        tried_to_recycle_this_day=pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...", "Waiting in backlog for recycling", "Positioning", "..."]], positive=True)
+        id_tried_to_recycle_this_day = tried_to_recycle_this_day.case_id.unique()
+
+        processing_on_day=pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...","Positioning","..."]], positive=True)
+        tried_to_recycle_from_backlog=processing_on_day[processing_on_day.case_id.isin(cases_in_backlog_eod)]
+        id_tried_to_recycle_from_backlog=tried_to_recycle_from_backlog.case_id.unique()
+        
+        total_tried_to_recyle=len(id_tried_to_recycle_this_day) + len(id_tried_to_recycle_from_backlog)
+        date_dict_recycling[date]=total_tried_to_recyle
+        date_dict_settled[date]=total_settled_by_recyling_day
+
+        print(date)
+        print("total tried to recycle:", total_tried_to_recyle)
+        print("total settled after recycling", total_tried_to_recyle)
+        
+    dates = date_dict_recycling.keys()
+    recycling_values = date_dict_recycling.values()
+    settled_values = date_dict_settled.values()
+
+    # Convert dates to numbers for plotting
+    x = range(len(dates))
+
+    # Plot bars for recycling values
+    plt.bar(x, recycling_values, width=0.4, align='center', label='Total Cases Tried to Recycle')
+
+    # Plot bars for settled values
+    plt.bar([i + 0.4 for i in x], settled_values, width=0.4, align='center', label='Total Cases Settled by Recycling')
+
+    # Add labels to bars
+    for i, (recycle, settled) in enumerate(zip(recycling_values, settled_values)):
+        plt.text(i, recycle, str(recycle), ha='center', va='bottom')
+        plt.text(i + 0.4, settled, str(settled), ha='center', va='bottom')
+
+    # Add x-axis labels (dates)
+    plt.xticks(x, dates)
+    plt.xlabel('Date')
+
+    # Add y-axis label
+    plt.ylabel('Total Cases')
+
+    # Add legend
     plt.legend()
-    plt.xticks(keys)
-    green_patch = mpatches.Patch(color='green', label='Settled')
-    red_patch = mpatches.Patch(color='red', label='Unsettled')
-    efficiency_patch = mpatches.Patch(color='blue', label=f'Settlement Efficiency: {settlement_efficiency:.2f}')
+    plt.title('Performance of recycling')
 
 
-    plt.legend(handles=[green_patch, red_patch,efficiency_patch])
+    # Show plot
+    plt.tight_layout()
+    plt.show()
+    return date_dict_settled, date_dict_recycling
+
+def per_day(event_log):
+    processed=dict()
+    settled=dict()
+    recycled=dict()
+    event_log['Starttime'] = pd.to_datetime(event_log['Starttime'])
+
+    # Extract date component from 'starttime' column
+    event_log['Start_date'] = event_log['Starttime'].dt.date
+
+    # Get unique dates
+    unique_dates = event_log['Start_date'].unique()
+    unique_dates=sorted(unique_dates)
+    settled_by_recycling,selected_for_recycling =histogram_recycled(event_log)
+    processed=dict()
+    recycled_selected=dict()
+    recycled_settled=dict()
+    settled=dict()
+    date_dict_unsettled=dict()
     
-   # plt.legend(bar, ['Settled', 'Unsettled'])
-    plt.xlabel('Outcome')
-    plt.ylabel('Value of transactions')
+
+    for date in unique_dates:
+        print(date)
+        histogram_date=dict()
+        event_log_day=event_log[event_log['Starttime'].dt.date==date]
+        #Visuals.process_map_Heuristics_Miner(event_log)
+        settled_transactions = pm4py.filter_trace_segments(event_log_day, [["...", "Settling"]], positive=True)
+        settled_transactions_id=settled_transactions.case_id.unique()
+        number_settled=len(settled_transactions_id)
+        print("Number of cases settled:", number_settled)
+
+        unsettled_no_credit=pm4py.filter_trace_segments(event_log_day, [["...", "Waiting in backlog for recycling"]], positive=True)
+        id_unsettled_no_credit=unsettled_no_credit.case_id.unique()
+        date_dict_unsettled[date]=len(id_unsettled_no_credit)
+        
+
+        processed_transactions = pm4py.filter_trace_segments(event_log_day, [["...","Positioning", "..."]], positive=True)
+        processed_transactions_id=processed_transactions.case_id.unique()
+        number_processed=len(processed_transactions_id)
+        print("Number of cases selected for processing:",number_processed)
+        
+        selected_for_recycling_day=selected_for_recycling.get(date)
+
+        recycled_transactions_day= settled_by_recycling.get(date)
+        print("Number of cases settled by recycling:",recycled_transactions_day)
+        processed[date]=number_processed
+        settled[date]=number_settled
+        recycled_selected[date]=selected_for_recycling_day
+        recycled_settled[date]=recycled_transactions_day
+
+
+    dates = processed.keys()
+    processed_values = processed.values()
+    settled_values = settled.values()
+    recycled_selected_values = recycled_selected.values()
+    recycled_settled_values = recycled_settled.values()
+    unsettled_values=date_dict_unsettled.values()
+
+    # Convert dates to numbers for plotting
+    x = range(len(dates))
+
+    # Plot bars for processed values
+    plt.bar(x, processed_values, width=0.2, align='center', label='Processed')
+
+    # Plot bars for settled values
+    plt.bar([i + 0.2 for i in x], settled_values, width=0.2, align='center', label='Settled')
+
+    plt.bar([i + 0.4 for i in x], unsettled_values, width=0.2, align='center', label='Failed to settle')
+
+    # Plot bars for recycled_selected values
+    plt.bar([i + 0.6 for i in x], recycled_selected_values, width=0.2, align='center', label='Selected for recycling')
+
+    # Plot bars for recycled_settled values
+    plt.bar([i + 0.8 for i in x], recycled_settled_values, width=0.2, align='center', label='Settled by recycling')
+
+    # Add labels to bars
+    for i, (processed_val, settled_val, unsettled_val,selected_val, settled_recycled) in enumerate(zip(processed_values, settled_values,unsettled_values, recycled_selected_values, recycled_settled_values)):
+        plt.text(i, processed_val, str(processed_val), ha='center', va='bottom')
+        plt.text(i + 0.2, settled_val, str(settled_val), ha='center', va='bottom')
+        plt.text(i + 0.4, unsettled_val, str(unsettled_val), ha='center', va='bottom')
+        plt.text(i + 0.6, selected_val, str(selected_val), ha='center', va='bottom')
+        plt.text(i + 0.8, settled_recycled, str(settled_recycled), ha='center', va='bottom')
+
+    # Add x-axis labels (dates)
+    plt.xticks(x, dates)
+    plt.xlabel('Date')
+
+    # Add y-axis label
+    plt.ylabel('Total')
+
+    # Add legend
+    plt.legend()
+    plt.title('Processing, settlement and recycling of cases')
+
+    # Show plot
+    plt.tight_layout()
     plt.show()
 
     return
-
-def settlement_efficiency_over_time(event_log, transactions):
-    for i in range(0, 86400, 900):  
-        time_hour = time.gmtime(i) 
-        time_hour_str = time.strftime('%H:%M:%S', time_hour) 
-        
-        filtered_event_log = event_log[event_log["Starttime"].hour < time_hour_str]
-       
-    return  
-
-
-
-
-    
 
     
 

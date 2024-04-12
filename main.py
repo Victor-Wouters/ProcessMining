@@ -7,33 +7,39 @@ import Visuals
 import EventlogDescription
 import EventSequences
 import KPIVisuals
+import remove_warmup
+import join_files
+import VisualizeSenderReceiver
 
 if __name__ == "__main__":
-    event_log_df= pd.read_csv('data/eventlog.csv', sep=';')
-    event_log = ImportData.read_in_data('data/eventlog.csv')
-    transactions = pd.read_csv('data/TRANSACTION1.csv', sep=';')
-    #print(event_log)
-    '''
+    event_log_df= pd.read_csv('data/joins2/eventlog.csv', sep=';')
+    transactions = pd.read_csv('data/joins2/TRANSACTION1.csv', sep=';')
+    event_log_joined=join_files.join_eventlog_transactions(event_log_df, transactions)
+    event_log=ImportData.read_in_data('JoinedLog.csv')
+    event_log=remove_warmup.remove_warmup_cooldown(event_log, warmup_days=2, cooldown_days=1)
+    print(event_log)
+    
     ActivitiesStats.activities(event_log)
     BPMN.process_tree_to_BPMN(event_log)
     BPMN.inductive_miner_algorithm(event_log)
     Visuals.process_tree(event_log)
     Visuals.process_map_DFG_algorithm(event_log)
     Visuals.process_map_Heuristics_Miner(event_log)
+    VisualizeSenderReceiver.visualize_sender_receiver(event_log)
     EventlogDescription.log_statistics(event_log)
-    #EventSequences.filter_activity(event_log, transactions)
-    KPIVisuals.settlements_graph(event_log_df)
-    '''
-    #KPIVisuals.histogram_val_match_sett(event_log_df)
-    #KPIVisuals.histogram_val_match_sett_30(event_log_df)
-    KPIVisuals.histogram_val_match_sett_uneven(event_log_df)
+    KPIVisuals.settlements_graph(event_log)
+    #KPIVisuals.histogram_val_match_sett(event_log)
+    #KPIVisuals.histogram_val_match_sett_30(event_log)
+    KPIVisuals.histogram_val_match_sett_uneven(event_log)
+    KPIVisuals.per_day(event_log)
+    KPIVisuals.histogram_failed_to_settle(event_log)
+    KPIVisuals.over_deadline(event_log)
+    
+    
+    
 
 
-    #KPIVisuals.histogram_unsettled(event_log, event_log_df)
-    #KPIVisuals.settlement_efficiency_participant(event_log,transactions)
-    #KPIVisuals.number_transactions_settled_unsettled(event_log)
-    #KPIVisuals.value_transactions_settled_unsettled(event_log, transactions)
-    #KPIVisuals.settlement_efficiency_over_time(event_log, transactions)
+ 
 
 
 
