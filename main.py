@@ -18,7 +18,6 @@ if __name__ == "__main__":
     event_log=ImportData.read_in_data('JoinedLog.csv')
     event_log=remove_warmup.remove_warmup_cooldown(event_log, warmup_days=2, cooldown_days=1)
     print(event_log)
-    
     ActivitiesStats.activities(event_log)
     BPMN.process_tree_to_BPMN(event_log)
     BPMN.inductive_miner_algorithm(event_log)
@@ -34,6 +33,7 @@ if __name__ == "__main__":
     KPIVisuals.per_day(event_log)
     KPIVisuals.histogram_failed_to_settle(event_log)
     KPIVisuals.over_deadline(event_log)
+    KPIVisuals.deadline_violated_cases_day(event_log)
     
     
     

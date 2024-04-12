@@ -459,6 +459,65 @@ def per_day(event_log):
 
     return
 
+def deadline_violated_cases_day(event_log):
+    event_log['Starttime'] = pd.to_datetime(event_log['Starttime'])
+
+    # Extract date component from 'starttime' column
+    event_log['Start_date'] = event_log['Starttime'].dt.date
+    #transactions['SettlementDeadline'] = transactions['SettlementDeadline'].dt.date
+    event_log['SettlementDeadline'] = pd.to_datetime(event_log['SettlementDeadline'])
+
+    # Get unique dates
+    unique_dates = event_log['Start_date'].unique()
+    unique_dates=sorted(unique_dates)
+    violations_day=dict()
+    ratio=dict()
+    
+  
+    for date in unique_dates:
+        
+        deadline_violated_activities=event_log[event_log["Starttime"].dt.date>event_log["SettlementDeadline"].dt.date]
+    
+        deadline_violated_activities_day=deadline_violated_activities[deadline_violated_activities["Starttime"].dt.date==date]
+        
+        id_violating_cases=deadline_violated_activities_day.case_id.unique()
+        violations_day[date]=len(id_violating_cases)
+
+        cases_performed_activity=event_log[event_log["Starttime"].dt.date==date]
+        id_cases_performed_activity=cases_performed_activity.case_id.unique()
+        ratio[date]=len(id_violating_cases)/len(id_cases_performed_activity)
+        
+    # Extract dates and corresponding violations counts from the dictionary
+    dates = list(violations_day.keys())
+    violations_count = list(violations_day.values())
+
+    # Create the bar chart
+    plt.figure(figsize=(10, 6))
+    
+    bars = plt.bar(dates, violations_count,color='skyblue')
+
+    # Add values on top of the bars
+    for bar, value, date in zip(bars, violations_count, dates):
+        plt.text(bar.get_x() + bar.get_width() / 2, 
+                bar.get_height() + 0.05, 
+                f'{value}\nPercentage of unique cases of that day: {ratio[date]:.2f}%', 
+                ha='center', 
+                va='bottom')
+
+    plt.title('number of unique cases per day that performed an activity after deadline')
+    plt.xlabel('Date')
+    plt.ylabel('Number of Violations')
+    plt.xticks(dates, rotation=45)
+    plt.tight_layout()
+    plt.show()
+    
+    return
+
+
+  
+
+
+  
     
 
   
