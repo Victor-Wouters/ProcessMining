@@ -277,7 +277,7 @@ def over_deadline(event_log):
     plt.title('Number of cases settling after deadline')
     plt.xlabel('Date')
     plt.ylabel('Number of Violations')
-    plt.xticks(rotation=45)
+    plt.xticks(dates, rotation=45)
 
     plt.tight_layout()
     plt.show()
