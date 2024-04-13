@@ -73,6 +73,7 @@ def histogram_val_match_sett(event_log_df):
                             textcoords='offset points')
         plt.show()
     return
+
 def histogram_val_match_sett_30(event_log_df):
     df = event_log_df
     df['Starttime'] = pd.to_datetime(df['Starttime'])
@@ -137,13 +138,11 @@ def histogram_val_match_sett_uneven(event_log_df):
         during_day.index=during_day.index.strftime('%H:%M')
         after_opening.index = after_opening.index.strftime('%H:%M')
        
-    
         # Combine data
       
         hist_data = pd.concat([before_opening, during_day,after_opening], axis=0, sort=False)
         hist_data = hist_data[['Validating', 'Matching', 'Settling']]
      
-
         # Plotting histogram
         ax = hist_data.plot(kind='bar', stacked=False)
         plt.title(f'Cases validated, matched and settled per hour - Date: {date}')
@@ -485,7 +484,7 @@ def deadline_violated_cases_day(event_log):
 
         cases_performed_activity=event_log[event_log["Starttime"].dt.date==date]
         id_cases_performed_activity=cases_performed_activity.case_id.unique()
-        ratio[date]=len(id_violating_cases)/len(id_cases_performed_activity)
+        ratio[date]=len(id_violating_cases)/len(id_cases_performed_activity)*100
         
     # Extract dates and corresponding violations counts from the dictionary
     dates = list(violations_day.keys())

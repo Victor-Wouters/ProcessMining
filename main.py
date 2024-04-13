@@ -38,7 +38,6 @@ if __name__ == "__main__":
     KPIVisuals.histogram_failed_to_settle(event_log)
     KPIVisuals.over_deadline(event_log)
     KPIVisuals.deadline_violated_cases_day(event_log)
-    
     time_dimension.days_after_deadline_hour(event_log)
 
     
