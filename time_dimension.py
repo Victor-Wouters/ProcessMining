@@ -20,10 +20,14 @@ def time_tests(event_log):
         event_log_day=event_log[event_log['Starttime'].dt.date==date]
         arrival_rate_day=pm4py.stats.get_case_arrival_average(event_log_day)
         case_duration=pm4py.stats.get_all_case_durations(event_log_day)
-        
         print(date)
-        print("average case duration (in hours?):",np.mean(case_duration)/3600)
-        print("arrival rate of the day (cases per minute?):",arrival_rate_day/60)
+        print("average case duration full log (in hours?):",np.mean(case_duration)/3600)
+        
+        print("Average time in minutes between 2 cases:",arrival_rate_day/60)
+    case_duration=pm4py.stats.get_all_case_durations(event_log)
+    print("complete log:")
+    print("average case duration full log (in hours?):",np.mean(case_duration)/3600)
+
 
 
 
@@ -55,8 +59,7 @@ def days_after_deadline(event_log):
         max_days = 4
         days_counts = {f"{i}": count_over_deadline.get(i, 0) for i in range(1, max_days+1)}
         violations[date]=days_counts
-        print(violations.keys())
-        print(violations.values())
+     
 
         # Print the counts
         for days, count in days_counts.items():
@@ -97,7 +100,6 @@ def days_after_deadline_hour(event_log):
     desired_time = pd.to_datetime("19:30:00").time()
     event_log['SettlementDeadline'] = event_log['SettlementDeadline'].apply(lambda x: pd.Timestamp.combine(x.date(), desired_time))
     event_log['SettlementDeadline'] = pd.to_datetime(event_log['SettlementDeadline'])
-    print(event_log['SettlementDeadline'])
    
     #print(date)
     settled_cases=event_log[event_log["Activity"]=="Settling"]

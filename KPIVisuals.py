@@ -49,7 +49,6 @@ def histogram_val_match_sett(event_log_df):
         # Extract hour from Starttime
         df['Hour'] = df['Starttime'].dt.hour
         filtered_df=df[df["Starttime"].dt.date==date]
-        print(filtered_df)
 
         # Filter data for Settling and Validating activities
         filtered_df = filtered_df[filtered_df['Activity'].isin([ 'Validating','Matching','Settling'])]
@@ -251,7 +250,7 @@ def over_deadline(event_log):
         violations[date]=len(deadline_violated_day)
         settled[date]=len(settled_case_day)
         ratio[date]=len(deadline_violated_day)/len(settled_cases)
-        print(date, settled_case_day, deadline_violated_day)
+        #print(date, settled_case_day, deadline_violated_day)
 
     
     ratio = {date: (violations[date] / settled[date]) * 100 for date in violations}
@@ -353,7 +352,6 @@ def histogram_recycled(event_log):
     plt.legend()
     plt.title('Performance of recycling')
 
-
     # Show plot
     plt.tight_layout()
     plt.show()
@@ -380,7 +378,6 @@ def per_day(event_log):
     
 
     for date in unique_dates:
-        print(date)
         histogram_date=dict()
         event_log_day=event_log[event_log['Starttime'].dt.date==date]
         #Visuals.process_map_Heuristics_Miner(event_log)
