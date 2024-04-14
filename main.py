@@ -14,8 +14,8 @@ import time_dimension
 import conformancecheck
 
 if __name__ == "__main__":
-    event_log_df= pd.read_csv('data/eventlog.csv', sep=';')
-    transactions = pd.read_csv('data/TRANSACTION1.csv', sep=';')
+    event_log_df= pd.read_csv('data/T+1/eventlog.csv', sep=';')
+    transactions = pd.read_csv('data/T+1/TRANSACTION1.csv', sep=';')
     event_log_joined=join_files.join_eventlog_transactions(event_log_df, transactions)
     event_log=ImportData.read_in_data('JoinedLog.csv')
     event_log=remove_warmup.remove_warmup_cooldown(event_log, warmup_days=2, cooldown_days=0)
