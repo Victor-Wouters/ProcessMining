@@ -9,6 +9,8 @@ import datetime as dt
 import time
 import Visuals
 import math
+from pm4py.objects.log.util import dataframe_utils
+from pm4py.objects.conversion.log import converter as log_converter
 
 def time_tests(event_log):
     event_log['Starttime'] = pd.to_datetime(event_log['Starttime'])
@@ -137,3 +139,110 @@ def days_after_deadline_hour(event_log):
     plt.show()
 
     return
+
+def calculate_avg_duration_between_validating_settling(event_log):
+    # Convert to datetime if necessary
+    event_log['Starttime'] = pd.to_datetime(event_log['Starttime'])
+
+    # Filter the log to include only the activities of interest
+    filtered_log = event_log[event_log['Activity'].isin(['Validating', 'Settling'])]
+
+    # Group by case_id and filter out cases that don't have both activities
+    grouped = filtered_log.groupby('case_id')
+    
+    durations = []  # This will store the duration in hours between 'Validating' and 'Settling' for each case
+    
+    for case_id, group in grouped:
+        if 'Validating' in group['Activity'].values and 'Settling' in group['Activity'].values:
+            # Get the minimum start time for 'Validating' and 'Settling'
+            validating_time = group[group['Activity'] == 'Validating']['Starttime'].min()
+            settling_time = group[group['Activity'] == 'Settling']['Starttime'].min()
+
+            if pd.notnull(validating_time) and pd.notnull(settling_time) and settling_time > validating_time:
+                duration = (settling_time - validating_time).total_seconds() / 3600  # Duration in hours
+                durations.append(duration)
+
+    # Calculate the average duration if any durations were calculated
+    if durations:
+        avg_duration = sum(durations) / len(durations)
+        print(f"Average duration between 'Validating' and 'Settling' in hours: {avg_duration}")
+    else:
+        print("No valid cases with both 'Validating' and 'Settling' were found.")
+
+def calculate_avg_duration_between_start_and_end(event_log):
+    # Ensure datetime format is correct and sorted
+    event_log = dataframe_utils.convert_timestamp_columns_in_df(event_log)
+    event_log = event_log.sort_values('Starttime')
+
+    # Convert the DataFrame to an event log
+    parameters = {log_converter.Variants.TO_EVENT_LOG.value.Parameters.CASE_ID_KEY: 'case_id'}
+    log = log_converter.apply(event_log, parameters=parameters, variant=log_converter.Variants.TO_EVENT_LOG)
+
+    # Filter traces and calculate durations
+    durations = []
+    for trace in log:
+        if trace and trace[0]['concept:name'] == 'Validating':  # Start activity must be 'Validating'
+            if trace[-1]['concept:name'] in ['Settling', 'Waiting in backlog for recycling']:  # Check the last event specifically
+                start_time = trace[0]['time:timestamp']
+                end_time = trace[-1]['time:timestamp']
+                if end_time > start_time:  # Ensure the end event is after the start event
+                    duration = (end_time - start_time).total_seconds()
+                    durations.append(duration)
+
+    # Compute the average duration in minutes
+    if durations:
+        avg_duration = np.mean(durations) / 3600  # Convert seconds to minutes
+        print(f"Average duration between 'Validating' and last event in hours: {avg_duration:.2f}")
+    else:
+        print("No valid cases were found that start with 'Validating' and end with 'Settling' or 'Waiting in backlog for recycling'.")
+
+def calculate_trace_counts(event_log):
+    # Ensure datetime format is correct and sorted
+    event_log = dataframe_utils.convert_timestamp_columns_in_df(event_log)
+    event_log = event_log.sort_values('Starttime')
+
+    # Convert the DataFrame to an event log
+    parameters = {log_converter.Variants.TO_EVENT_LOG.value.Parameters.CASE_ID_KEY: 'case_id'}
+    log = log_converter.apply(event_log, parameters=parameters, variant=log_converter.Variants.TO_EVENT_LOG)
+
+    count_validating_to_settling = 0
+    count_validating_to_waiting = 0
+
+    # Iterate through each trace in the log
+    for trace in log:
+        if trace and trace[0]['concept:name'] == 'Validating':  # Start activity must be 'Validating'
+            if trace[-1]['concept:name'] == 'Settling':
+                count_validating_to_settling += 1
+            elif trace[-1]['concept:name'] == 'Waiting in backlog for recycling':
+                count_validating_to_waiting += 1
+
+    # Print out the results
+    print(f"Count of traces starting with 'Validating' and ending with 'Settling': {count_validating_to_settling}")
+    print(f"Count of traces starting with 'Validating' and ending with 'Waiting in backlog for recycling': {count_validating_to_waiting}")
+
+def calculate_avg_duration_between_start_and_end_backlog(event_log):
+    # Ensure datetime format is correct and sorted
+    event_log = dataframe_utils.convert_timestamp_columns_in_df(event_log)
+    event_log = event_log.sort_values('Starttime')
+
+    # Convert the DataFrame to an event log
+    parameters = {log_converter.Variants.TO_EVENT_LOG.value.Parameters.CASE_ID_KEY: 'case_id'}
+    log = log_converter.apply(event_log, parameters=parameters, variant=log_converter.Variants.TO_EVENT_LOG)
+
+    # Filter traces and calculate durations
+    durations = []
+    for trace in log:
+        if trace and trace[0]['concept:name'] == 'Validating':  # Start activity must be 'Validating'
+            if trace[-1]['concept:name'] in ['Waiting in backlog for recycling']:  # Check the last event specifically
+                start_time = trace[0]['time:timestamp']
+                end_time = trace[-1]['time:timestamp']
+                if end_time > start_time:  # Ensure the end event is after the start event
+                    duration = (end_time - start_time).total_seconds()
+                    durations.append(duration)
+
+    # Compute the average duration in minutes
+    if durations:
+        avg_duration = np.mean(durations) / 3600  # Convert seconds to minutes
+        print(f"Average duration between 'Validating' and 'Waiting in backlog unsettled' in hours: {avg_duration:.2f}")
+    else:
+        print("No valid cases were found that start with 'Validating' and end with 'Settling' or 'Waiting in backlog for recycling'.")

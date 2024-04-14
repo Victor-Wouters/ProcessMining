@@ -73,95 +73,152 @@ def histogram_val_match_sett(event_log_df):
         plt.show()
     return
 
-def histogram_val_match_sett_30(event_log_df):
-    df = event_log_df
-    df['Starttime'] = pd.to_datetime(df['Starttime'])
+# def histogram_val_match_sett_30(event_log_df):
+#     df = event_log_df
+#     df['Starttime'] = pd.to_datetime(df['Starttime'])
 
-    # Get unique dates
-    unique_dates = event_log_df['Starttime'].dt.date.unique()
-    unique_dates=sorted(unique_dates)
-    for date in unique_dates:
-        hist_data = 0
-        # Extract hour and minute from Starttime
-        df['Hour_Minute'] = df['Starttime'].dt.strftime('%H:%M')
+#     # Get unique dates
+#     unique_dates = event_log_df['Starttime'].dt.date.unique()
+#     unique_dates=sorted(unique_dates)
+#     for date in unique_dates:
+#         hist_data = 0
+#         # Extract hour and minute from Starttime
+#         df['Hour_Minute'] = df['Starttime'].dt.strftime('%H:%M')
 
-        filtered_df = df[df["Starttime"].dt.date == date]
+#         filtered_df = df[df["Starttime"].dt.date == date]
 
-        # Filter data for Settling and Validating activities
-        filtered_df = filtered_df[filtered_df['Activity'].isin(['Validating', 'Matching', 'Settling'])]
+#         # Filter data for Settling and Validating activities
+#         filtered_df = filtered_df[filtered_df['Activity'].isin(['Validating', 'Matching', 'Settling'])]
 
-        # Group by 30-minute intervals and activity, count cases
-        hist_data = filtered_df.groupby([pd.Grouper(key='Starttime', freq='30T'), 'Activity']).size().unstack(fill_value=0)
-        hist_data = hist_data[['Validating', 'Matching', 'Settling']]
+#         # Group by 30-minute intervals and activity, count cases
+#         hist_data = filtered_df.groupby([pd.Grouper(key='Starttime', freq='30T'), 'Activity']).size().unstack(fill_value=0)
+#         hist_data = hist_data[['Validating', 'Matching', 'Settling']]
 
 
-        # Plotting histogram
-        ax = hist_data.plot(kind='bar', stacked=False)
-        plt.figsize=(16, 10)
-        plt.title(f'Cases validated, matched and settled per 30 minutes - Date: {date}')
-        plt.xlabel('Time')
-        plt.ylabel('Number of Cases')
+#         # Plotting histogram
+#         ax = hist_data.plot(kind='bar', stacked=False)
+#         plt.figsize=(16, 10)
+#         plt.title(f'Cases validated, matched and settled per 30 minutes - Date: {date}')
+#         plt.xlabel('Time')
+#         plt.ylabel('Number of Cases')
 
-        # Adjust x-axis ticks to align with the center of each 30-minute interval
-        plt.xticks(range(len(hist_data.index)), hist_data.index.strftime('%H:%M'), rotation=45, ha='right')
+#         # Adjust x-axis ticks to align with the center of each 30-minute interval
+#         plt.xticks(range(len(hist_data.index)), hist_data.index.strftime('%H:%M'), rotation=45, ha='right')
 
-        plt.legend(title='Activity')
+#         plt.legend(title='Activity')
 
-        for p in ax.patches:
-            if p.get_height() != 0:
-                ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width() / 2., p.get_height()),
-                            ha='center', va='center', fontsize=6, color='black', xytext=(0, 5),
-                            textcoords='offset points')
-        plt.show()
-    return
+#         for p in ax.patches:
+#             if p.get_height() != 0:
+#                 ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width() / 2., p.get_height()),
+#                             ha='center', va='center', fontsize=6, color='black', xytext=(0, 5),
+#                             textcoords='offset points')
+#         plt.show()
+#     return
+
+# def histogram_val_match_sett_uneven(event_log_df):
+#     df = event_log_df.copy()
+#     df['Starttime'] = pd.to_datetime(df['Starttime'])
+
+#     # Get unique dates
+#     unique_dates = df['Starttime'].dt.date.unique()
+#     unique_dates=sorted(unique_dates)
+#     for date in unique_dates:
+#         # Extract hour and minute from Starttime
+#         df['Hour_Minute'] = df['Starttime'].dt.strftime('%H:%M')
+
+#         filtered_df = df[df["Starttime"].dt.date == date]
+
+#         # Filter data for Settling and Validating activities
+#         filtered_df = filtered_df[filtered_df['Activity'].isin(['Validating', 'Matching', 'Settling'])]
+#         during_day=filtered_df[filtered_df['Starttime'].dt.hour.between(2, 22)].groupby([pd.Grouper(key='Starttime', freq='60T'), 'Activity']).size().unstack(fill_value=0)
+#         before_opening=filtered_df[filtered_df['Starttime'].dt.hour.between(0, 1)].groupby([pd.Grouper(key='Starttime', freq='30T'), 'Activity']).size().unstack(fill_value=0)
+#         after_opening=filtered_df[filtered_df['Starttime'].dt.hour.between(23, 24)].groupby([pd.Grouper(key='Starttime', freq='30T'), 'Activity']).size().unstack(fill_value=0)
+#         before_opening.index = before_opening.index.strftime('%H:%M')
+#         during_day.index=during_day.index.strftime('%H:%M')
+#         after_opening.index = after_opening.index.strftime('%H:%M')
+       
+#         # Combine data
+      
+#         hist_data = pd.concat([before_opening, during_day,after_opening], axis=0, sort=False)
+#         hist_data = hist_data[['Validating', 'Matching', 'Settling']]
+     
+#         # Plotting histogram
+#         ax = hist_data.plot(kind='bar', stacked=False)
+#         plt.title(f'Cases validated, matched and settled per hour - Date: {date}')
+#         plt.xlabel('Time')
+#         plt.ylabel('Number of Cases')
+
+#         # Customize x-axis ticks
+#         plt.xticks(range(len(hist_data.index)), hist_data.index, rotation=45, ha='right')
+#         plt.legend(title='Activity')
+
+#         for p in ax.patches:
+#             if p.get_height() != 0:
+#                 ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width() / 2., p.get_height()),
+#                             ha='center', va='center', fontsize=6, color='black', xytext=(0, 5),
+#                             textcoords='offset points')
+#         plt.show()
+
+       
+#     return
+
 
 def histogram_val_match_sett_uneven(event_log_df):
     df = event_log_df.copy()
     df['Starttime'] = pd.to_datetime(df['Starttime'])
 
+    # Check if Starttime is timezone-aware and adjust bins accordingly
+    tz_info = df['Starttime'].dt.tz  # Get timezone information from Starttime
+
     # Get unique dates
     unique_dates = df['Starttime'].dt.date.unique()
-    unique_dates=sorted(unique_dates)
+    unique_dates = sorted(unique_dates)
     for date in unique_dates:
-        # Extract hour and minute from Starttime
-        df['Hour_Minute'] = df['Starttime'].dt.strftime('%H:%M')
+        day_df = df[df['Starttime'].dt.date == date]
 
-        filtered_df = df[df["Starttime"].dt.date == date]
+        # Filter data for Settling, Matching, and Validating activities
+        day_df = day_df[day_df['Activity'].isin(['Validating', 'Matching', 'Settling'])]
 
-        # Filter data for Settling and Validating activities
-        filtered_df = filtered_df[filtered_df['Activity'].isin(['Validating', 'Matching', 'Settling'])]
-        during_day=filtered_df[filtered_df['Starttime'].dt.hour.between(2, 22)].groupby([pd.Grouper(key='Starttime', freq='60T'), 'Activity']).size().unstack(fill_value=0)
-        before_opening=filtered_df[filtered_df['Starttime'].dt.hour.between(0, 1)].groupby([pd.Grouper(key='Starttime', freq='30T'), 'Activity']).size().unstack(fill_value=0)
-        after_opening=filtered_df[filtered_df['Starttime'].dt.hour.between(23, 24)].groupby([pd.Grouper(key='Starttime', freq='30T'), 'Activity']).size().unstack(fill_value=0)
-        before_opening.index = before_opening.index.strftime('%H:%M')
-        during_day.index=during_day.index.strftime('%H:%M')
-        after_opening.index = after_opening.index.strftime('%H:%M')
-       
-        # Combine data
-      
-        hist_data = pd.concat([before_opening, during_day,after_opening], axis=0, sort=False)
-        hist_data = hist_data[['Validating', 'Matching', 'Settling']]
-     
-        # Plotting histogram
-        ax = hist_data.plot(kind='bar', stacked=False)
-        plt.title(f'Cases validated, matched and settled per hour - Date: {date}')
+        # Define time bins with timezone awareness matching Starttime
+        start_time = pd.Timestamp(date, tz=tz_info)
+        mid_time = start_time + pd.Timedelta(minutes=30)
+        second_last_time = pd.Timestamp(date, tz=tz_info) + pd.Timedelta(hours=23, minutes=30)
+        end_time = pd.Timestamp(date, tz=tz_info) + pd.Timedelta(days=1, minutes=-1)  # Adjust last bin to end at 23:59
+
+        # Create custom time bins without duplication
+        bins = [start_time, mid_time] + pd.date_range(start=mid_time + pd.Timedelta(hours=1), end=second_last_time, freq='1H').tolist() + [end_time]
+
+        # Create labels for each bin by considering the range each bin covers
+        labels = []
+        for i in range(len(bins)-1):
+            start_label = bins[i].strftime('%H:%M')
+            end_label = bins[i+1].strftime('%H:%M')
+            labels.append(f'{start_label}-{end_label}')
+
+        # Bin data according to defined bins
+        day_df['Time_Bin'] = pd.cut(day_df['Starttime'], bins=bins, labels=labels, right=False)
+        binned_data = day_df.groupby(['Time_Bin', 'Activity']).size().unstack(fill_value=0)
+
+        # Define colors for each activity
+        colors = {'Validating': 'blue', 'Matching': 'orange', 'Settling': 'green'}
+
+        # Plotting histogram with bars next to each other and custom colors
+        ax = binned_data.plot(kind='bar', stacked=False, figsize=(14, 6), width=0.8, color=[colors.get(x) for x in binned_data.columns])
+        plt.title(f'Cases Validated, Matched, and Settled Per Hour - Date: {date}')
         plt.xlabel('Time')
         plt.ylabel('Number of Cases')
+        plt.xticks(rotation=45, ha='right')
 
-        # Customize x-axis ticks
-        plt.xticks(range(len(hist_data.index)), hist_data.index, rotation=45, ha='right')
-        plt.legend(title='Activity')
-
+        # Annotate bar heights
         for p in ax.patches:
             if p.get_height() != 0:
                 ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width() / 2., p.get_height()),
                             ha='center', va='center', fontsize=6, color='black', xytext=(0, 5),
                             textcoords='offset points')
+
+        plt.legend(title='Activity')
+        plt.tight_layout()
         plt.show()
-
-       
-    return
-
 
 def histogram_failed_to_settle(event_log):
    
