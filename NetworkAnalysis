@@ -1,0 +1,58 @@
+# Import of required libraries and packages
+import igraph as ig
+import easygui
+from matplotlib import pyplot as plt
+import numpy as np
+import scipy
+import statistics
+import pandas as pd
+import cairo
+
+print(ig.__version__)
+
+def transform_transactions(transactions):
+    #insert join with particpants here
+    network_df=transactions[["FromParticipantId","ToParticipantId","Value"]]
+        # Assuming your DataFrame is named df
+    # Grouping by 'FromParticipantId' and 'ToParticipantId' and then summing the 'Value' column
+    summed_values = network_df.groupby(['FromParticipantId', 'ToParticipantId'])['Value'].sum().reset_index()
+
+    # Create a DataFrame containing all possible sender-receiver combinations
+    senders = network_df['FromParticipantId'].unique()
+    receivers = network_df['ToParticipantId'].unique()
+    all_combinations = pd.DataFrame([(sender, receiver) for sender in senders for receiver in receivers], columns=['FromParticipantId', 'ToParticipantId'])
+
+    # Left join the summed_values DataFrame with all_combinations DataFrame
+    summed_values = pd.merge(all_combinations, summed_values, on=['FromParticipantId', 'ToParticipantId'], how='left').fillna(0)
+
+
+    print(network_df)
+    print(summed_values)
+    return summed_values
+
+def create_and_draw_graph(network_df):
+    g=ig.Graph()
+    g = g.DataFrame(summed_values, directed=True)
+    ig.plot(g)
+
+
+    return g
+    
+transactions = pd.read_csv('data/Legacy/TRANSACTION22_3.csv', sep=';')
+participants=pd.read_csv('data/Legacy/PARTICIPANTS1.csv', sep=';')
+summed_values=transform_transactions(transactions)
+g=create_and_draw_graph(summed_values)
+print(g.summary())
+print(g.closeness())
+
+layout_fr = g.layout("fr")
+
+visual_style = {}
+visual_style["vertex_size"] = 5
+visual_style["vertex_label_size"]=5
+visual_style["vertex_color"] = "blue"
+visual_style["layout"] = layout_fr #spring based layout, attractive force between the nodes
+visual_style["edge_width"]=0.5
+visual_style["bbox"] = (600, 600)
+visual_style["margin"] = 20
+ig.plot(g, **visual_style, target='myfile.png')
