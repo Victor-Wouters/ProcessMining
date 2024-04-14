@@ -198,12 +198,14 @@ def histogram_val_match_sett_uneven(event_log_df):
         # Bin data according to defined bins
         day_df['Time_Bin'] = pd.cut(day_df['Starttime'], bins=bins, labels=labels, right=False)
         binned_data = day_df.groupby(['Time_Bin', 'Activity']).size().unstack(fill_value=0)
+        binned_data = binned_data[['Validating', 'Matching', 'Settling']]
+
 
         # Define colors for each activity
-        colors = {'Validating': 'blue', 'Matching': 'orange', 'Settling': 'green'}
+        #colors = {'Validating': 'blue', 'Matching': 'orange', 'Settling': 'green'}
 
         # Plotting histogram with bars next to each other and custom colors
-        ax = binned_data.plot(kind='bar', stacked=False, figsize=(14, 6), width=0.8, color=[colors.get(x) for x in binned_data.columns])
+        ax = binned_data.plot(kind='bar', stacked=False, figsize=(14, 6), width=0.8) #color=[colors.get(x) for x in binned_data.columns]
         plt.title(f'Cases Validated, Matched, and Settled Per Hour - Date: {date}')
         plt.xlabel('Time')
         plt.ylabel('Number of Cases')
