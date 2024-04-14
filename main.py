@@ -21,9 +21,6 @@ if __name__ == "__main__":
     event_log=remove_warmup.remove_warmup_cooldown(event_log, warmup_days=2, cooldown_days=0)
     print(event_log)
 
-    # time_dimension.days_after_deadline(event_log)
-    # time_dimension.time_tests(event_log)
-    
     # ActivitiesStats.activities(event_log)
     # BPMN.process_tree_to_BPMN(event_log)
     # BPMN.inductive_miner_algorithm(event_log)
@@ -40,11 +37,13 @@ if __name__ == "__main__":
     # KPIVisuals.histogram_failed_to_settle(event_log)
     # KPIVisuals.over_deadline(event_log)
     # KPIVisuals.deadline_violated_cases_day(event_log)
-    # time_dimension.days_after_deadline_hour(event_log)
-    # time_dimension.calculate_avg_duration_between_validating_settling(event_log)
-    # time_dimension.calculate_avg_duration_between_start_and_end_backlog(event_log)
-    # time_dimension.calculate_trace_counts(event_log)
-    # conformancecheck.conformance_check(event_log)
+    #time_dimension.days_after_deadline_hour(event_log)
+    #time_dimension.duration_and_case_count(event_log)
+    #time_dimension.calculate_avg_duration_between_validating_settling(event_log)
+    #time_dimension.calculate_avg_duration_between_start_and_end_backlog(event_log)
+    #time_dimension.calculate_trace_counts(event_log)
+    #time_dimension.days_after_deadline(event_log)
+    #conformancecheck.conformance_check(event_log)
     
     
 

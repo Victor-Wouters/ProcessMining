@@ -246,3 +246,16 @@ def calculate_avg_duration_between_start_and_end_backlog(event_log):
         print(f"Average duration between 'Validating' and 'Waiting in backlog unsettled' in hours: {avg_duration:.2f}")
     else:
         print("No valid cases were found that start with 'Validating' and end with 'Settling' or 'Waiting in backlog for recycling'.")
+    return
+
+def duration_and_case_count(event_log):
+    settling_end = pm4py.filter_trace_segments(event_log, [["Validating", "...", "Settling"]], positive=True)
+    unsettling_end = pm4py.filter_trace_segments(event_log, [["Validating", "...", "Waiting in backlog for recycling"]], positive=True)
+    duration_settling=pm4py.stats.get_all_case_durations(settling_end)
+    duration_unsettling=pm4py.stats.get_all_case_durations(unsettling_end)
+
+    print("average case duration for validating... settling (in hours):",round(np.mean(duration_settling)/3600,2))
+    print("number of cases:", len(settling_end.case_id.unique()))
+    print("average case duration for validating... backlog unsettled (in hours):",round(np.mean(duration_unsettling)/3600,2))
+    print("number of cases:", len(unsettling_end.case_id.unique()))
+    return
