@@ -11,6 +11,7 @@ import remove_warmup
 import join_files
 import VisualizeSenderReceiver
 import time_dimension
+import conformancecheck
 
 if __name__ == "__main__":
     event_log_df= pd.read_csv('data/eventlog.csv', sep=';')
@@ -43,7 +44,7 @@ if __name__ == "__main__":
     # time_dimension.calculate_avg_duration_between_validating_settling(event_log)
     # time_dimension.calculate_avg_duration_between_start_and_end_backlog(event_log)
     # time_dimension.calculate_trace_counts(event_log)
-    
+    # conformancecheck.conformance_check(event_log)
     
     
 
