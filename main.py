@@ -41,8 +41,8 @@ if __name__ == "__main__":
     # KPIVisuals.deadline_violated_cases_day(event_log)
     # time_dimension.days_after_deadline_hour(event_log)
     # time_dimension.calculate_avg_duration_between_validating_settling(event_log)
-    time_dimension.calculate_avg_duration_between_start_and_end_backlog(event_log)
-    time_dimension.calculate_trace_counts(event_log)
+    # time_dimension.calculate_avg_duration_between_start_and_end_backlog(event_log)
+    # time_dimension.calculate_trace_counts(event_log)
     
     
     
