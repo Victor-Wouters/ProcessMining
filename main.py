@@ -14,13 +14,17 @@ import time_dimension
 import conformancecheck
 
 if __name__ == "__main__":
-    event_log_df= pd.read_csv('data/T+1/eventlog.csv', sep=';')
-    transactions = pd.read_csv('data/T+1/TRANSACTION1.csv', sep=';')
+    event_log_df= pd.read_csv('data/T+0_GW/eventlog.csv', sep=';')
+    transactions = pd.read_csv('data/T+0_GW/TRANSACTION1.csv', sep=';')
     event_log_joined=join_files.join_eventlog_transactions(event_log_df, transactions)
     event_log=ImportData.read_in_data('JoinedLog.csv')
     event_log=remove_warmup.remove_warmup_cooldown(event_log, warmup_days=2, cooldown_days=0)
     print(event_log)
-    
+    time_dimension.rtp_vs_batch(event_log)
+
+
+
+    """
     ActivitiesStats.activities(event_log)
     BPMN.process_tree_to_BPMN(event_log)
     BPMN.inductive_miner_algorithm(event_log)
@@ -44,6 +48,7 @@ if __name__ == "__main__":
     time_dimension.calculate_trace_counts(event_log)
     time_dimension.days_after_deadline(event_log)
     #conformancecheck.conformance_check(event_log)
+    """
     
     
 

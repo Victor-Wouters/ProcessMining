@@ -11,6 +11,8 @@ import Visuals
 import math
 from pm4py.objects.log.util import dataframe_utils
 from pm4py.objects.conversion.log import converter as log_converter
+from datetime import time
+
 
 def time_tests(event_log):
     event_log['Starttime'] = pd.to_datetime(event_log['Starttime'])
@@ -258,4 +260,36 @@ def duration_and_case_count(event_log):
     print("number of cases:", len(settling_end.case_id.unique()))
     print("average case duration for validating... backlog unsettled (in hours):",round(np.mean(duration_unsettling)/3600,2))
     print("number of cases:", len(unsettling_end.case_id.unique()))
+    return
+
+def rtp_vs_batch(event_log):
+    opening_time = time(1, 30)
+    event_log['Starttime'] = pd.to_datetime(event_log['Starttime'])
+    # Extract date component from 'starttime' column
+    event_log['Start_date'] = event_log['Starttime'].dt.date
+    unique_dates = event_log['Start_date'].unique()
+    unique_dates=sorted(unique_dates)
+    for date in unique_dates:
+        event_log_day=event_log[event_log['Starttime'].dt.date==date]
+        event_log_day_settling=event_log_day[event_log_day['Activity']=="Settling"]
+        #print(event_log_day_settling)
+        
+        settlements=event_log_day_settling["Value"]
+        rtp_settlements=event_log_day_settling["Value"][event_log_day_settling["Starttime"].dt.time>opening_time]
+        batch_settlements=event_log_day_settling["Value"][event_log_day_settling["Starttime"].dt.time<opening_time]
+
+        rtp_value = rtp_settlements.sum()
+        batch_value=batch_settlements.sum()
+        settlement_value=settlements.sum()
+
+        print(date)
+        print("rtp value on this day:", rtp_value)
+        print("batch value on this day (from previous day):", batch_value)
+        print("ratio (rtp/batch):", round(rtp_value/batch_value,2))
+        print("ratio rtp/total settled", round(rtp_value/settlement_value,2))
+        print("ratio batch/total settled", round(batch_value/settlement_value,2))
+        print()
+
+
+
     return
