@@ -21,6 +21,8 @@ if __name__ == "__main__":
     event_log=remove_warmup.remove_warmup_cooldown(event_log, warmup_days=2, cooldown_days=0)
     print(event_log)
     time_dimension.rtp_vs_batch(event_log)
+    KPIVisuals.settlements_graph(event_log)
+
 
 
 
@@ -33,7 +35,6 @@ if __name__ == "__main__":
     Visuals.process_map_Heuristics_Miner(event_log)
     VisualizeSenderReceiver.visualize_sender_receiver(event_log)
     EventlogDescription.log_statistics(event_log)
-    KPIVisuals.settlements_graph(event_log)
     #KPIVisuals.histogram_val_match_sett(event_log)
     #KPIVisuals.histogram_val_match_sett_30(event_log)
     KPIVisuals.histogram_val_match_sett_uneven(event_log)

@@ -25,7 +25,7 @@ def settlements_graph(event_log_df):
 
     # Plotting
     plt.figure(figsize=(10, 6))
-    settling_counts.plot(marker='o', linestyle='-')
+    settling_counts.plot( linestyle='-')
     plt.title('Number of Cases Settling Over Time')
     plt.xlabel('Time')
     plt.ylabel('Number of Cases Settling')
