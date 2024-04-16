@@ -8,6 +8,14 @@ import locale
 import datetime
 import time
 import Visuals
+from datetime import time
+
+def view(event_log):
+    view=pm4py.filter_trace_segments(event_log, [["...","Waiting in backlog for recycling" ,"Positioning","..."]], positive=True)
+    print(view)
+    print(view.case_id.unique())
+
+    return
 
 
 def settlements_graph(event_log_df):
@@ -24,13 +32,16 @@ def settlements_graph(event_log_df):
     settling_counts = settling_cases.groupby(settling_cases['Starttime'].dt.floor('H')).size()
 
     # Plotting
-    plt.figure(figsize=(10, 6))
+    fontsize1=15
+    fontsize2=13
+    plt.figure(figsize=(15, 8))
     settling_counts.plot( linestyle='-')
-    plt.title('Number of Cases Settling Over Time')
-    plt.xlabel('Time')
-    plt.ylabel('Number of Cases Settling')
+    plt.title('Number Of Cases Settling Over Time',fontsize=fontsize1)
+    plt.xlabel('Time (60-minute intervals)',fontsize=fontsize1)
+    plt.ylabel('Number of Cases Settling',fontsize=fontsize1)
     plt.grid(True)
-    plt.xticks(rotation=45)
+    plt.xticks(rotation=45,fontsize=fontsize1)
+    plt.yticks(fontsize=fontsize1)
     plt.tight_layout()
     plt.show()
 
@@ -40,7 +51,6 @@ def histogram_val_match_sett(event_log_df):
     df=event_log_df
     df['Starttime'] = pd.to_datetime(df['Starttime'])
     
-
     # Get unique dates
     unique_dates = event_log_df['Starttime'].dt.date.unique()
     unique_dates=sorted(unique_dates)
@@ -60,16 +70,19 @@ def histogram_val_match_sett(event_log_df):
 
         # Plotting histogram
         ax=hist_data.plot(kind='bar', stacked=False)
-        plt.title(f'Cases validated, matched and settled per hour - Date: {date}')
-        plt.xlabel('Hour')
-        plt.ylabel('Number of Cases')
-        plt.xticks(range(0, 24, 1), [f"{i}-{i+1}" for i in range(0, 24, 1)], rotation=45)
-        plt.legend(title='Activity')
+        fontsize1=15
+        fontsize2=13
+        plt.figure(figsize=(15, 8))
+        plt.title(f'Cases Validated, Matched And Settled Per Hour - Date: {date}',fontsize=fontsize1)
+        plt.xlabel('Hour',fontsize=fontsize1)
+        plt.ylabel('Number of Cases',fontsize=fontsize1)
+        plt.xticks(range(0, 24, 1), [f"{i}-{i+1}" for i in range(0, 24, 1)], rotation=45,fontsize=fontsize1)
+        plt.legend(title='Activity',fontsize=fontsize2)
         for p in ax.patches:
             if p.get_height()!=0:
                 ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width() / 2., p.get_height()), 
-                            ha='center', va='center', fontsize=6, color='black', xytext=(0, 5), 
-                            textcoords='offset points')
+                            ha='center', va='center', color='black', xytext=(0, 5), 
+                            textcoords='offset points',fontsize=fontsize2)
         plt.show()
     return
 
@@ -200,25 +213,26 @@ def histogram_val_match_sett_uneven(event_log_df):
         binned_data = day_df.groupby(['Time_Bin', 'Activity']).size().unstack(fill_value=0)
         binned_data = binned_data[['Validating', 'Matching', 'Settling']]
 
-
-        # Define colors for each activity
-        #colors = {'Validating': 'blue', 'Matching': 'orange', 'Settling': 'green'}
-
-        # Plotting histogram with bars next to each other and custom colors
-        ax = binned_data.plot(kind='bar', stacked=False, figsize=(14, 6), width=0.8) #color=[colors.get(x) for x in binned_data.columns]
-        plt.title(f'Cases Validated, Matched, and Settled Per Hour - Date: {date}')
-        plt.xlabel('Time')
-        plt.ylabel('Number of Cases')
-        plt.xticks(rotation=45, ha='right')
+        
+        ax = binned_data.plot(kind='bar',figsize=(15, 8), stacked=False, width=0.8) #color=[colors.get(x) for x in binned_data.columns]
+        fontsize1=15
+        fontsize2=13
+     
+        plt.title(f'Cases Validated, Matched, and Settled Per Hour - Date: {date}', fontsize=fontsize1)
+        plt.xlabel('Time', fontsize=fontsize1)
+        plt.ylabel('Number of Cases', fontsize=fontsize1)
+        plt.xticks(rotation=45, ha='right', fontsize=fontsize1)
+        plt.yticks(fontsize=fontsize1)
 
         # Annotate bar heights
         for p in ax.patches:
             if p.get_height() != 0:
                 ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width() / 2., p.get_height()),
-                            ha='center', va='center', fontsize=6, color='black', xytext=(0, 5),
-                            textcoords='offset points')
+                            ha='center', va='center', color='black', xytext=(0, 5),
+                            textcoords='offset points', fontsize=fontsize2)
+        
 
-        plt.legend(title='Activity')
+        plt.legend(title='Activity', fontsize=fontsize2)
         plt.tight_layout()
         plt.show()
 
@@ -254,6 +268,9 @@ def histogram_failed_to_settle(event_log):
     x = range(len(dates))
 
     # Plot bars for recycling values
+    fontsize1=15
+    fontsize2=13
+    plt.figure(figsize=(15, 8))
     plt.bar(x, tried_to_settle_values, width=0.4, align='center', label='Total Tried to settle')
 
     # Plot bars for settled values
@@ -261,19 +278,20 @@ def histogram_failed_to_settle(event_log):
 
     # Add labels to bars
     for i, (recycle, settled) in enumerate(zip(tried_to_settle_values, failed_to_settle)):
-        plt.text(i, recycle, str(recycle), ha='center', va='bottom')
-        plt.text(i + 0.4, settled, str(settled), ha='center', va='bottom')
+        plt.text(i, recycle, str(recycle), ha='center', va='bottom', fontsize=fontsize2)
+        plt.text(i + 0.4, settled, str(settled), ha='center', va='bottom', fontsize=fontsize2)
 
     # Add x-axis labels (dates)
-    plt.xticks(x, dates)
-    plt.xlabel('Date')
+    plt.xticks(x, dates,fontsize=fontsize1)
+    plt.xlabel('Date',fontsize=fontsize1)
 
     # Add y-axis label
-    plt.ylabel('Total')
+    plt.ylabel('Total',fontsize=fontsize1)
+    plt.yticks(fontsize=fontsize1)
 
     # Add legend
-    plt.legend()
-    plt.title('Successful versus failed settlements per day')
+    plt.legend( fontsize=fontsize2)
+    plt.title('Successful Versus Failed Settlements Per Day',fontsize=fontsize1)
 
     # Show plot
     plt.tight_layout()
@@ -319,7 +337,9 @@ def over_deadline(event_log):
     violations_count = list(violations.values())
 
     # Create the bar chart
-    plt.figure(figsize=(10, 6))
+    fontsize1=15
+    fontsize2=13
+    plt.figure(figsize=(15, 8))
     
     bars = plt.bar(dates, violations_count,color='skyblue')
 
@@ -327,19 +347,20 @@ def over_deadline(event_log):
     for bar, value, date in zip(bars, violations_count, dates):
         plt.text(bar.get_x() + bar.get_width() / 2, 
                 bar.get_height() + 0.05, 
-                f'{value}\nPercentage of settled: {ratio[date]:.2f}%', 
+                f'{value}\n% Of Settled Day: {ratio[date]:.2f}%', 
                 ha='center', 
-                va='bottom')
+                va='bottom', fontsize=fontsize2)
 
-    plt.title('Number of cases settling after deadline')
-    plt.xlabel('Date')
-    plt.ylabel('Number of Violations')
-    plt.xticks(dates, rotation=45)
+    plt.title('Number of Cases Settling After Deadline',fontsize=fontsize1)
+    plt.xlabel('Date',fontsize=fontsize1)
+    plt.ylabel('Number of Violations',fontsize=fontsize1)
+    plt.xticks(dates, rotation=45,fontsize=fontsize1)
+    plt.yticks(fontsize=fontsize1)
 
     plt.tight_layout()
     plt.show()
     return
-
+"""
 def histogram_recycled(event_log):
     event_log['Starttime'] = pd.to_datetime(event_log['Starttime'])
     cases_in_backlog_eod=[]
@@ -348,31 +369,42 @@ def histogram_recycled(event_log):
     # Get unique dates
     unique_dates = event_log['Starttime'].dt.date.unique()
     unique_dates=sorted(unique_dates)
+    cases_backlog_eod2=pm4py.filter_trace_segments(event_log, [["...", "Waiting in backlog for recycling"]], positive=True)
+
 
     for date in unique_dates:
         cases_backlog_eod=pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...", "Waiting in backlog for recycling"]], positive=True)
         cases_in_backlog_eod.extend(cases_backlog_eod.case_id.unique())
-   
+    recycling_time = time(19, 30)
     
     for date in unique_dates:
+        cases_backlog_until_today=cases_backlog_eod2[(cases_backlog_eod2["Activity"]=="Waiting in backlog for recycling") & (cases_backlog_eod2["Starttime"].dt.date<date)]
+
         # Filter traces where the pattern: "... -> Waiting in queue unsettled -> ... -> Settling" occurs
         settle_after_unsettled_same_day = pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...", "Waiting in backlog for recycling", "...", "Settling"]], positive=True)
         # Extract case ids where settling occurs after being unsettled
         id_settle_after_unsettled = settle_after_unsettled_same_day.case_id.unique()
 
         settle_on_day=pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...","Settling"]], positive=True)
-        settle_on_day_from_backlog=settle_on_day[settle_on_day.case_id.isin(cases_in_backlog_eod)]
+        settle_on_day_from_backlog=cases_backlog_eod2[(cases_backlog_eod2['Starttime'].dt.time == date) & (cases_backlog_eod2['Activity'] == 'Settling')]
+
         id_settle_on_day_from_backlog=settle_on_day_from_backlog.case_id.unique()
 
-        total_settled_by_recyling_day=len(id_settle_after_unsettled)+len( id_settle_on_day_from_backlog)
+        total_settled_by_recyling_day=len(id_settle_after_unsettled)+len(id_settle_on_day_from_backlog)
         date_dict_settled[date]=total_settled_by_recyling_day
 
         tried_to_recycle_this_day=pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...", "Waiting in backlog for recycling", "Positioning", "..."]], positive=True)
         id_tried_to_recycle_this_day = tried_to_recycle_this_day.case_id.unique()
 
-        processing_on_day=pm4py.filter_trace_segments(event_log[event_log["Starttime"].dt.date==date], [["...","Positioning","..."]], positive=True)
-        tried_to_recycle_from_backlog=processing_on_day[processing_on_day.case_id.isin(cases_in_backlog_eod)]
+        processing_on_day=pm4py.filter_trace_segments(event_log[(event_log['Starttime'].dt.date == date)], [["...","Positioning","..."]], positive=True)
+        print(processing_on_day)
+        #tried_to_recycle_from_backlog=processing_on_day[processing_on_day.case_id.isin(cases_in_backlog_eod)]
+        tried_to_recycle_from_backlog=cases_backlog_until_today[(cases_backlog_until_today['Starttime'].dt.time == recycling_time) & (cases_backlog_until_today['Activity'] == 'Positioning')]
+        print(tried_to_recycle_from_backlog)
         id_tried_to_recycle_from_backlog=tried_to_recycle_from_backlog.case_id.unique()
+
+        print("this day",len(id_tried_to_recycle_this_day))
+        print("backlog",len(id_tried_to_recycle_from_backlog) )
         
         total_tried_to_recyle=len(id_tried_to_recycle_this_day) + len(id_tried_to_recycle_from_backlog)
         date_dict_recycling[date]=total_tried_to_recyle
@@ -380,7 +412,7 @@ def histogram_recycled(event_log):
 
         print(date)
         print("total tried to recycle:", total_tried_to_recyle)
-        print("total settled after recycling", total_tried_to_recyle)
+        print("total settled after recycling", total_settled_by_recyling_day)
         
     dates = date_dict_recycling.keys()
     recycling_values = date_dict_recycling.values()
@@ -415,6 +447,81 @@ def histogram_recycled(event_log):
     plt.tight_layout()
     plt.show()
     return date_dict_settled, date_dict_recycling
+
+    """
+
+def histogram_recycled(event_log):
+    event_log['Starttime'] = pd.to_datetime(event_log['Starttime'])
+    cases_in_backlog_eod=[]
+    date_dict_settled=dict()
+    date_dict_recycling=dict()
+    # Get unique dates
+    unique_dates = event_log['Starttime'].dt.date.unique()
+    unique_dates=sorted(unique_dates)
+    recycling_time = time(19, 20)
+    print(recycling_time)
+    
+    for date in unique_dates:
+        event_log_day=event_log[event_log["Starttime"].dt.date==date]
+        print(event_log_day["Starttime"].dt.time)
+        recycling_today=event_log_day[(event_log_day["Starttime"].dt.time==recycling_time) & (event_log_day["Activity"]=="Positioning")]
+        print(recycling_today)
+        id_tried_to_recycle_this_day = recycling_today.case_id.unique()
+
+        settle_by_recycling= event_log_day[(event_log_day["Activity"]=="Settling") & event_log_day.case_id.isin(id_tried_to_recycle_this_day)]
+        print(settle_by_recycling)
+
+        total_tried_to_recyle=len(id_tried_to_recycle_this_day)
+        total_settled_by_recyling_day=len(settle_by_recycling)
+
+        date_dict_recycling[date]=total_tried_to_recyle
+        date_dict_settled[date]=total_settled_by_recyling_day
+
+        print(date)
+        print("total tried to recycle:", total_tried_to_recyle)
+        print("total settled after recycling", total_settled_by_recyling_day)
+
+ 
+    dates = date_dict_recycling.keys()
+    recycling_values = date_dict_recycling.values()
+    settled_values = date_dict_settled.values()
+
+    # Convert dates to numbers for plotting
+    x = range(len(dates))
+    fontsize1=15
+    fontsize2=13
+    plt.figure(figsize=(15, 8))
+    
+
+    # Plot bars for recycling values
+    plt.bar(x, recycling_values, width=0.4, align='center', label='Total Cases Tried to Recycle')
+
+    # Plot bars for settled values
+    plt.bar([i + 0.4 for i in x], settled_values, width=0.4, align='center', label='Total Cases Settled by Recycling')
+
+    # Add labels to bars
+    
+    for i, (recycle, settled) in enumerate(zip(recycling_values, settled_values)):
+        plt.text(i, recycle, str(recycle), ha='center', va='bottom',fontsize=fontsize2)
+        plt.text(i + 0.4, settled, str(settled), ha='center', va='bottom',fontsize=fontsize2)
+
+    # Add x-axis labels (dates)
+    plt.xticks(x, dates,fontsize=fontsize1)
+    plt.xlabel('Date',fontsize=fontsize1)
+
+    # Add y-axis label
+    plt.ylabel('Total Cases',fontsize=fontsize1)
+    plt.yticks(fontsize=fontsize1)
+
+    # Add legend
+    plt.legend(fontsize=fontsize2)
+    plt.title('Performance Of Recycling',fontsize=fontsize1)
+
+    # Show plot
+    plt.tight_layout()
+    plt.show()
+    return date_dict_settled, date_dict_recycling
+
 
 def per_day(event_log):
     processed=dict()
@@ -474,6 +581,10 @@ def per_day(event_log):
 
     # Convert dates to numbers for plotting
     x = range(len(dates))
+    plt.figure(figsize=(15, 8))
+    fontsize1=15
+    fontsize2=13
+   
 
     # Plot bars for processed values
     plt.bar(x, processed_values, width=0.2, align='center', label='Processed')
@@ -490,23 +601,25 @@ def per_day(event_log):
     plt.bar([i + 0.8 for i in x], recycled_settled_values, width=0.2, align='center', label='Settled by recycling')
 
     # Add labels to bars
+    
     for i, (processed_val, settled_val, unsettled_val,selected_val, settled_recycled) in enumerate(zip(processed_values, settled_values,unsettled_values, recycled_selected_values, recycled_settled_values)):
-        plt.text(i, processed_val, str(processed_val), ha='center', va='bottom')
-        plt.text(i + 0.2, settled_val, str(settled_val), ha='center', va='bottom')
-        plt.text(i + 0.4, unsettled_val, str(unsettled_val), ha='center', va='bottom')
-        plt.text(i + 0.6, selected_val, str(selected_val), ha='center', va='bottom')
-        plt.text(i + 0.8, settled_recycled, str(settled_recycled), ha='center', va='bottom')
+        plt.text(i, processed_val, str(processed_val), ha='center', va='bottom',fontsize=fontsize2)
+        plt.text(i + 0.2, settled_val, str(settled_val), ha='center', va='bottom',fontsize=fontsize2)
+        plt.text(i + 0.4, unsettled_val, str(unsettled_val), ha='center', va='bottom',fontsize=fontsize2)
+        plt.text(i + 0.6, selected_val, str(selected_val), ha='center', va='bottom', fontsize=fontsize2)
+        plt.text(i + 0.8, settled_recycled, str(settled_recycled), ha='center', va='bottom',fontsize=fontsize2)
 
     # Add x-axis labels (dates)
-    plt.xticks(x, dates)
-    plt.xlabel('Date')
+    plt.xticks(x, dates,fontsize=fontsize1)
+    plt.xlabel('Date',fontsize=fontsize1)
 
     # Add y-axis label
-    plt.ylabel('Total')
+    plt.ylabel('Total',fontsize=fontsize1)
+    plt.yticks(fontsize=fontsize1)
 
     # Add legend
-    plt.legend()
-    plt.title('Processing, settlement and recycling of cases')
+    plt.legend(fontsize=fontsize2)
+    plt.title('Processing, Settlement And Recycling Of Cases',fontsize=fontsize1)
 
     # Show plot
     plt.tight_layout()
@@ -547,7 +660,9 @@ def deadline_violated_cases_day(event_log):
     violations_count = list(violations_day.values())
 
     # Create the bar chart
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(15, 8))
+    fontsize1=15
+    fontsize2=13
     
     bars = plt.bar(dates, violations_count,color='skyblue')
 
@@ -555,14 +670,15 @@ def deadline_violated_cases_day(event_log):
     for bar, value, date in zip(bars, violations_count, dates):
         plt.text(bar.get_x() + bar.get_width() / 2, 
                 bar.get_height() + 0.05, 
-                f'{value}\nPercentage of unique cases of that day: {ratio[date]:.2f}%', 
+                f'{value}\n% Of Unique Cases Day: {ratio[date]:.2f}%', 
                 ha='center', 
-                va='bottom')
+                va='bottom', fontsize=fontsize2)
 
-    plt.title('number of unique cases per day that performed an activity after deadline')
-    plt.xlabel('Date')
-    plt.ylabel('Number of Violations')
-    plt.xticks(dates, rotation=45)
+    plt.title('Number Of Unique Cases Per Day That Performed An Activity After Deadline' ,fontsize=fontsize1)
+    plt.xlabel('Date',fontsize=fontsize1)
+    plt.ylabel('Number of Violations',fontsize=fontsize1)
+    plt.xticks(dates, rotation=45,fontsize=fontsize1)
+    plt.yticks(fontsize=fontsize1)
     plt.tight_layout()
     plt.show()
     
