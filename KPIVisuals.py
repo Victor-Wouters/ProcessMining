@@ -56,7 +56,7 @@ def settlements_graph(event_log):
     plt.figure(figsize=(15, 8))
     plt.plot(merged_counts['Hour'], merged_counts['count'], linestyle='-')
     plt.title('Settling Cases Per Hour Over Time', fontsize=fontsize1)
-    plt.xlabel('Hour',fontsize=fontsize1)
+    plt.xlabel('Time (60-minute intervals)',fontsize=fontsize1)
     plt.ylabel('Count',fontsize=fontsize1)
     plt.xticks(rotation=45,fontsize=fontsize1)
     plt.yticks(fontsize=fontsize1)
@@ -345,6 +345,7 @@ def histogram_failed_to_settle(event_log):
     fontsize1=15
     fontsize2=13
     bar_width = 0.2
+    plt.figure(figsize=(15, 8))
 
     # Create a list of x-coordinates for each group of bars
     x = range(len(tried_to_settle_values))
@@ -479,6 +480,7 @@ def histogram_failed_to_settle_value(event_log):
 
     # Create a list of x-coordinates for each group of bars
     x = range(len(tried_to_settle_values))
+    plt.figure(figsize=(15, 8))
 
     # Plot bars for 'Total Selected For Processing'
     plt.bar(x, tried_to_settle_values, width=bar_width, align='center', label='Total Selected For Processing')
@@ -567,7 +569,7 @@ def over_deadline_settlements(event_log):
     plt.title('% of Settled Cases Settling After Deadline',fontsize=fontsize1)
     plt.xlabel('Date',fontsize=fontsize1)
     plt.ylabel('% of Violations',fontsize=fontsize1)
-    plt.xticks(dates, rotation=45,fontsize=fontsize1)
+    plt.xticks(dates,fontsize=fontsize1)
     plt.yticks(fontsize=fontsize1)
 
     plt.tight_layout()
