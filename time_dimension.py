@@ -12,6 +12,7 @@ import math
 from pm4py.objects.log.util import dataframe_utils
 from pm4py.objects.conversion.log import converter as log_converter
 from datetime import time
+from datetime import timedelta
 
 
 def time_tests(event_log):
@@ -35,36 +36,52 @@ def time_tests(event_log):
 
 def days_after_deadline(event_log):
     event_log['Starttime'] = pd.to_datetime(event_log['Starttime'])
-
-    # Extract date component from 'starttime' column
-    event_log['Start_date'] = event_log['Starttime'].dt.date
-    #transactions['SettlementDeadline'] = transactions['SettlementDeadline'].dt.date
+    closing_time=time(19,30)
+    opening_time=time(22,00)
     event_log['SettlementDeadline'] = pd.to_datetime(event_log['SettlementDeadline'])
-    # Get unique dates
-    unique_dates = event_log['Start_date'].unique()
-    unique_dates=sorted(unique_dates)
+
     violations=dict()
     settled=dict()
     ratio=dict()
-   
-    for date in unique_dates:
-        #print(date)
-        settled_cases=event_log[event_log["Activity"]=="Settling"]
-        deadline_violated=settled_cases[settled_cases["Starttime"].dt.date>settled_cases["SettlementDeadline"].dt.date]
-        #print(deadline_violated)
 
-        deadline_violated_day=deadline_violated[deadline_violated["Starttime"].dt.date==date]
+    for day in sorted(event_log['Starttime'].dt.date.unique()):
+        if day== sorted(event_log['Starttime'].dt.date.unique())[0]:
+            pass
+        else: 
+            closing_day=day
+            opening_day=day-timedelta(days=1)
+            batch_previous_day=event_log[event_log["Starttime"].dt.date==opening_day]
+            batch_previous_day=batch_previous_day[batch_previous_day["Starttime"].dt.time>=opening_time]
+
+            rtp_this_day=event_log[event_log["Starttime"].dt.date==closing_day]
+            rtp_this_day=rtp_this_day[rtp_this_day["Starttime"].dt.time<=closing_time]
+            
+            settled_cases_rtp=rtp_this_day[rtp_this_day["Activity"]=="Settling"]
+            deadline_violated_rtp=settled_cases_rtp[settled_cases_rtp["Starttime"].dt.date>settled_cases_rtp["SettlementDeadline"].dt.date]
+
+            settled_cases_batch=batch_previous_day[batch_previous_day["Activity"]=="Settling"]
+            deadline_violated_batch=settled_cases_batch[(settled_cases_batch["Starttime"].dt.date)+timedelta(days=1)>settled_cases_batch["SettlementDeadline"].dt.date]
         
-        deadline_violated_day['number_of_days_over_deadline'] = (deadline_violated_day['Starttime'].dt.day - deadline_violated_day['SettlementDeadline'].dt.day)
-        count_over_deadline = deadline_violated_day.groupby('number_of_days_over_deadline').size()
+        deadline_violated_rtp['number_of_days_over_deadline'] = (deadline_violated_rtp['Starttime'].dt.day - deadline_violated_rtp['SettlementDeadline'].dt.day)
+        count_over_deadline_rtp = deadline_violated_rtp.groupby('number_of_days_over_deadline').size()
         max_days = 4
-        days_counts = {f"{i}": count_over_deadline.get(i, 0) for i in range(1, max_days+1)}
-        violations[date]=days_counts
-     
+        days_counts_rtp = {f"{i}": count_over_deadline_rtp.get(i, 0) for i in range(1, max_days+1)}
 
-        # Print the counts
-        for days, count in days_counts.items():
-            print(f"{date}, {count} times {days}")
+        deadline_violated_batch['number_of_days_over_deadline'] = ((deadline_violated_rtp['Starttime'].dt.day+timedelta(days=1)) - deadline_violated_rtp['SettlementDeadline'].dt.day)
+        count_over_deadline_batch = deadline_violated_batch.groupby('number_of_days_over_deadline').size()
+        max_days = 4
+        days_counts_batch = {f"{i}": count_over_deadline_batch.get(i, 0) for i in range(1, max_days+1)}
+        total_counts = {}
+
+        for i in range(1, max_days + 1):
+            total_counts[str(i)] = days_counts_batch.get(i, 0) + days_counts_rtp.get(str(i), 0)
+
+
+        violations[date]=total_counts
+     
+    # Print the counts
+    for days, count in total_counts.items():
+        print(f"{date}, {count} times {days}")
     num_cols = 2
     num_rows = 2
     dates = list(violations.keys())[:4]
@@ -256,6 +273,7 @@ def calculate_avg_duration_between_start_and_end_backlog(event_log):
     return
 
 def duration_and_case_count(event_log):
+    event_log=event_log[event_log["Starttime"].dt.date>sorted(event_log['Starttime'].dt.date.unique())[0]]
     settling_end = pm4py.filter_trace_segments(event_log, [["Validating", "...", "Settling"]], positive=True)
     unsettling_end = pm4py.filter_trace_segments(event_log, [["Validating", "...", "Waiting in backlog for recycling"]], positive=True)
     duration_settling=pm4py.stats.get_all_case_durations(settling_end)
@@ -267,39 +285,3 @@ def duration_and_case_count(event_log):
     print("number of cases:", len(unsettling_end.case_id.unique()))
     return
 
-def rtp_vs_batch(event_log):
-    opening_time = time(1, 30)
-    closing_time=time(19, 30)
-    event_log['Starttime'] = pd.to_datetime(event_log['Starttime'])
-    # Extract date component from 'starttime' column
-    event_log['Start_date'] = event_log['Starttime'].dt.date
-    unique_dates = event_log['Start_date'].unique()
-    unique_dates=sorted(unique_dates)
-    avg_rtp_ratio=0
-    avg_batch_ratio=0
-    for date in unique_dates:
-        event_log_day=event_log[event_log['Starttime'].dt.date==date]
-        event_log_day_settling=event_log_day[event_log_day['Activity']=="Settling"]
-        #print(event_log_day_settling)
-        
-        settlements=event_log_day_settling["Value"]
-        rtp_settlements=event_log_day_settling["Value"][(event_log_day_settling["Starttime"].dt.time>opening_time) & (event_log_day_settling["Starttime"].dt.time<closing_time)]
-        batch_settlements=event_log_day_settling["Value"][event_log_day_settling["Starttime"].dt.time>closing_time]
-
-        rtp_value = rtp_settlements.sum()
-        batch_value=batch_settlements.sum()
-        settlement_value=settlements.sum()
-        avg_rtp_ratio+=rtp_value/settlement_value
-        avg_batch_ratio+=batch_value/settlement_value
-
-        print(date)
-        print("rtp value on this day:", rtp_value)
-        print("batch value on this day (from previous day):", batch_value)
-        print("ratio (rtp/batch):", round(rtp_value/batch_value,2))
-        print("ratio rtp/total settled", round(rtp_value/settlement_value,2))
-        print("ratio batch/total settled", round(batch_value/settlement_value,2))
-        print()
-    print("average RTP ratio over all the days:", round(avg_rtp_ratio/len(unique_dates),4)*100)
-    print("average batch ratio over all the days:", round(avg_batch_ratio/len(unique_dates),4)*100)
-
-    return
