@@ -1,9 +1,11 @@
 import pm4py
 import pandas as pd
 import numpy as np
+import Visuals
 
 # Discover traces in the event log
 def log_statistics(event_log):
+    event_log=Visuals.filter_log(event_log)
     variants = pm4py.get_variants(event_log)
     dsit_traces=len(variants.keys())
     num_events=len(event_log)
@@ -16,7 +18,8 @@ def log_statistics(event_log):
     min_length=min(len(key) for key in variants.keys())
     avg_length = round(np.mean([len(key) for key in variants.keys()]))
     std_length=np.std(np.array([len(key) for key in variants.keys()])) 
-    case_durations=pm4py.get_all_case_durations(event_log)
+    filtered_log= pm4py.filter_trace_segments(event_log, [["Validating","...", "Settling"],["Validating","...","Waiting in backlog for recycling"]], positive=True)
+    case_durations=pm4py.get_all_case_durations(filtered_log)
     max_duration=max(case_durations)/3600
     min_duration=min(case_durations)
     avg_duration=np.mean(case_durations)/3600
@@ -58,7 +61,7 @@ def log_statistics(event_log):
     min_length_trace = [variant for variant in variants.keys() if len(variant) == min_length]
     
     if min_length_trace:
-        print("\nTrace(s) with the maximum length:")
+        print("\nTrace(s) with the min length:")
         for trace in min_length_trace:
             print(trace)
 

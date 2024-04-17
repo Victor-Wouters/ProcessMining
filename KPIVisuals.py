@@ -14,7 +14,7 @@ from datetime import datetime, time
 
 
 def view(event_log):
-    view=pm4py.filter_trace_segments(event_log, [["...","Waiting in backlog for recycling" ,"Positioning","..."]], positive=True)
+    view=pm4py.filter_trace_segments(event_log, [["Positioning","..."]], positive=True)
     print(view)
     print(view.case_id.unique())
 
