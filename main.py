@@ -14,17 +14,21 @@ import time_dimension
 import conformancecheck
 
 if __name__ == "__main__":
-    event_log_df= pd.read_csv('data/T+0_NO_GW/eventlog.csv', sep=';')
-    transactions = pd.read_csv('data/T+0_NO_GW/TRANSACTION1.csv', sep=';')
+    event_log_df= pd.read_csv('data/T+1_BASE/eventlog.csv', sep=';')
+    transactions = pd.read_csv('data/T+1_BASE/TRANSACTION1.csv', sep=';')
+    #participants = pd.read_csv('data/T+0_NO_GW/PARTICIPANTS1.csv', sep=';')
     event_log_joined=join_files.join_eventlog_transactions(event_log_df, transactions)
     event_log=ImportData.read_in_data('JoinedLog.csv')
+    #event_log_part_tran=join_files.join_merged_event_log_participants(event_log, participants)
     event_log=remove_warmup.remove_warmup_cooldown(event_log, warmup_days=1, cooldown_days=0)
     print(event_log)
 
     
     #Visuals.process_map_Heuristics_Miner(event_log)
-    EventlogDescription.log_statistics(event_log)
+    VisualizeSenderReceiver.visualize_sender_receiver(event_log)
+    #VisualizeSenderReceiver.visualize_sender_receiver_value(event_log)
     #KPIVisuals.view(event_log)
+    
     
     """"
     ActivitiesStats.activities(event_log)
