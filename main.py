@@ -33,7 +33,7 @@ if __name__ == "__main__":
     # VisualizeSenderReceiver.visualize_sender_receiver(event_log)
     # EventlogDescription.log_statistics(event_log)
     # KPIVisuals.settlements_graph(event_log)
-    # KPIVisuals.histogram_val_match_sett(event_log)
+    KPIVisuals.histogram_val_match_sett(event_log)
     # #KPIVisuals.histogram_val_match_sett_30(event_log)
     # KPIVisuals.histogram_val_match_sett_uneven(event_log)
     # KPIVisuals.per_day(event_log)
