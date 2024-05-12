@@ -11,6 +11,9 @@ import Visuals
 import math
 from pm4py.objects.log.util import dataframe_utils
 from pm4py.objects.conversion.log import converter as log_converter
+from datetime import time
+from datetime import timedelta
+
 
 def time_tests(event_log):
     event_log['Starttime'] = pd.to_datetime(event_log['Starttime'])
@@ -31,61 +34,77 @@ def time_tests(event_log):
     print("average case duration full log (in hours?):",np.mean(case_duration)/3600)
 
 
-
-
-
 def days_after_deadline(event_log):
     event_log['Starttime'] = pd.to_datetime(event_log['Starttime'])
-
-    # Extract date component from 'starttime' column
-    event_log['Start_date'] = event_log['Starttime'].dt.date
-    #transactions['SettlementDeadline'] = transactions['SettlementDeadline'].dt.date
+    closing_time=time(19,30)
+    opening_time=time(22,00)
     event_log['SettlementDeadline'] = pd.to_datetime(event_log['SettlementDeadline'])
-    # Get unique dates
-    unique_dates = event_log['Start_date'].unique()
-    unique_dates=sorted(unique_dates)
+
     violations=dict()
     settled=dict()
     ratio=dict()
-  
-    for date in unique_dates:
-        #print(date)
-        settled_cases=event_log[event_log["Activity"]=="Settling"]
-        deadline_violated=settled_cases[settled_cases["Starttime"].dt.date>settled_cases["SettlementDeadline"].dt.date]
-        #print(deadline_violated)
 
-        deadline_violated_day=deadline_violated[deadline_violated["Starttime"].dt.date==date]
+    for day in sorted(event_log['Starttime'].dt.date.unique()):
+        if day== sorted(event_log['Starttime'].dt.date.unique())[0]:
+            pass
+        else: 
+            closing_day=day
+            opening_day=day-timedelta(days=1)
+            batch_previous_day=event_log[event_log["Starttime"].dt.date==opening_day]
+            batch_previous_day=batch_previous_day[batch_previous_day["Starttime"].dt.time>=opening_time]
+
+            rtp_this_day=event_log[event_log["Starttime"].dt.date==closing_day]
+            rtp_this_day=rtp_this_day[rtp_this_day["Starttime"].dt.time<=closing_time]
+            
+            settled_cases_rtp=rtp_this_day[rtp_this_day["Activity"]=="Settling"]
+            deadline_violated_rtp=settled_cases_rtp[settled_cases_rtp["Starttime"].dt.date>settled_cases_rtp["SettlementDeadline"].dt.date]
+
+            settled_cases_batch=batch_previous_day[batch_previous_day["Activity"]=="Settling"]
+            deadline_violated_batch=settled_cases_batch[(settled_cases_batch["Starttime"].dt.date)+timedelta(days=1)>settled_cases_batch["SettlementDeadline"].dt.date]
         
-        deadline_violated_day['number_of_days_over_deadline'] = (deadline_violated_day['Starttime'].dt.day - deadline_violated_day['SettlementDeadline'].dt.day)
-        count_over_deadline = deadline_violated_day.groupby('number_of_days_over_deadline').size()
+        deadline_violated_rtp['number_of_days_over_deadline'] = (deadline_violated_rtp['Starttime'].dt.day - deadline_violated_rtp['SettlementDeadline'].dt.day)
+        count_over_deadline_rtp = deadline_violated_rtp.groupby('number_of_days_over_deadline').size()
         max_days = 4
-        days_counts = {f"{i}": count_over_deadline.get(i, 0) for i in range(1, max_days+1)}
-        violations[date]=days_counts
-     
+        days_counts_rtp = {f"{i}": count_over_deadline_rtp.get(i, 0) for i in range(1, max_days+1)}
 
-        # Print the counts
-        for days, count in days_counts.items():
-            print(f"{date}, {count} times {days}")
+        deadline_violated_batch['number_of_days_over_deadline'] = ((deadline_violated_rtp['Starttime'].dt.day+timedelta(days=1)) - deadline_violated_rtp['SettlementDeadline'].dt.day)
+        count_over_deadline_batch = deadline_violated_batch.groupby('number_of_days_over_deadline').size()
+        max_days = 4
+        days_counts_batch = {f"{i}": count_over_deadline_batch.get(i, 0) for i in range(1, max_days+1)}
+        total_counts = {}
+
+        for i in range(1, max_days + 1):
+            total_counts[str(i)] = days_counts_batch.get(i, 0) + days_counts_rtp.get(str(i), 0)
+
+
+        violations[date]=total_counts
+     
+    # Print the counts
+    for days, count in total_counts.items():
+        print(f"{date}, {count} times {days}")
     num_cols = 2
     num_rows = 2
     dates = list(violations.keys())[:4]
 
 
-    fig, axes = plt.subplots(num_rows, num_cols, figsize=(10, 8))
+    fig, axes = plt.subplots(num_rows, num_cols, figsize=(15, 8))
+    fontsize1=15
+    fontsize2=13
+  
 
     # Plotting
     for idx, (date, ax) in enumerate(zip(dates, axes.flatten())):
         counts = violations[date]
         bars = ax.bar(counts.keys(), counts.values())
-        ax.set_title(f"number of days settled after deadline {date}")
-        ax.set_xlabel('Keys')
-        ax.set_ylabel('Counts')
-
+        ax.set_title(f"Number Of Days Settled After Deadline {date}",fontsize=fontsize1)
+        ax.set_xlabel('Number Of Days Settled After Deadline', fontsize=fontsize1)
+        ax.set_ylabel('Counts',fontsize=fontsize1)
+        
         # Adding labels to bars with counts greater than 0
         for bar, count in zip(bars, counts.values()):
             if count > 0:
                 height = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width() / 2.0, height, f'{height}', ha='center', va='bottom')
+                ax.text(bar.get_x() + bar.get_width() / 2.0, height, f'{height}', ha='center', va='bottom',fontsize=fontsize2)
 
     plt.tight_layout()
     plt.show()
@@ -105,13 +124,20 @@ def days_after_deadline_hour(event_log):
    
     #print(date)
     settled_cases=event_log[event_log["Activity"]=="Settling"]
-    deadline_violated=settled_cases[settled_cases["Starttime"].dt.date>settled_cases["SettlementDeadline"].dt.date]
+    #deadline_violated=settled_cases[settled_cases["Starttime"].dt.date>settled_cases["SettlementDeadline"].dt.date]
+    deadline_violated = settled_cases[
+    (settled_cases["Starttime"].dt.date > settled_cases["SettlementDeadline"].dt.date) |
+    ((settled_cases["Starttime"].dt.date == settled_cases["SettlementDeadline"].dt.date) & 
+     (settled_cases["Starttime"].dt.time > time(19, 30)))
+    ]
     deadline_violated['Starttime'] = deadline_violated['Starttime'].dt.tz_localize(None)
     deadline_violated['SettlementDeadline'] = deadline_violated['SettlementDeadline'].dt.tz_localize(None)
     #print(deadline_violated)
   
     deadline_violated['number_of_hours_over_deadline'] = (deadline_violated['Starttime'] - deadline_violated['SettlementDeadline']).dt.total_seconds() / 3600
     deadline_violated['number_of_hours_over_deadline'] = deadline_violated['number_of_hours_over_deadline'].apply(math.ceil)
+    print(deadline_violated)
+    deadline_violated.to_csv('deadline_violations.csv', index=False)
 
     print(deadline_violated['number_of_hours_over_deadline'])
     count_over_deadline = deadline_violated.groupby('number_of_hours_over_deadline').size()
@@ -121,20 +147,23 @@ def days_after_deadline_hour(event_log):
     # Print the counts
     for days, count in hours_counts.items():
         print(f" {count} times {days}")
-    
-    plt.figure(figsize=(12, 6))
+        
+    fontsize1=15
+    fontsize2=13
+    plt.figure(figsize=(15, 8))
     bars=plt.bar(hours_counts.keys(), hours_counts.values(), color='skyblue')
     for bar, count in zip(bars, hours_counts.values()):
         if count != 0:
             height = bar.get_height()
-            plt.text(bar.get_x() + bar.get_width() / 2, height, '%d' % int(height), ha='center', va='bottom', fontsize=8)
+            plt.text(bar.get_x() + bar.get_width() / 2, height, '%d' % int(height), ha='center', va='bottom', fontsize=fontsize2)
 
 
-    plt.xlabel('Hours Settled Over Deadline')
-    plt.ylabel('Frequency')
-    plt.title('Frequency of Hours Settled after deadline')
-    plt.xticks(rotation=45)
-    plt.xticks(range(0, max_hours, 5)) 
+    plt.xlabel('Hours Settled Over Deadline', fontsize=fontsize1)
+    plt.ylabel('Frequency',fontsize=fontsize1)
+    plt.title('Frequency Of Hours Settled After Deadline',fontsize=fontsize1)
+    plt.xticks(rotation=45,fontsize=fontsize1)
+    plt.xticks(range(0, max_hours, 5),fontsize=fontsize1) 
+    plt.yticks(fontsize=fontsize1)
     plt.tight_layout()
     plt.show()
 
@@ -246,3 +275,18 @@ def calculate_avg_duration_between_start_and_end_backlog(event_log):
         print(f"Average duration between 'Validating' and 'Waiting in backlog unsettled' in hours: {avg_duration:.2f}")
     else:
         print("No valid cases were found that start with 'Validating' and end with 'Settling' or 'Waiting in backlog for recycling'.")
+    return
+
+def duration_and_case_count(event_log):
+    event_log=event_log[event_log["Starttime"].dt.date>sorted(event_log['Starttime'].dt.date.unique())[0]]
+    settling_end = pm4py.filter_trace_segments(event_log, [["Validating", "...", "Settling"]], positive=True)
+    unsettling_end = pm4py.filter_trace_segments(event_log, [["Validating", "...", "Waiting in backlog for recycling"]], positive=True)
+    duration_settling=pm4py.stats.get_all_case_durations(settling_end)
+    duration_unsettling=pm4py.stats.get_all_case_durations(unsettling_end)
+
+    print("average case duration for validating... settling (in hours):",round(np.mean(duration_settling)/3600,2))
+    print("number of cases:", len(settling_end.case_id.unique()))
+    print("average case duration for validating... backlog unsettled (in hours):",round(np.mean(duration_unsettling)/3600,2))
+    print("number of cases:", len(unsettling_end.case_id.unique()))
+    return
+
